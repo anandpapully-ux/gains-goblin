@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+keystore.properties
+*.jks
+*.keystore
+# Personal source material (workout plan screenshots) stays local
+Pasted image*.png

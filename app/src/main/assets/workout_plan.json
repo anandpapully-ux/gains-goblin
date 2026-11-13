@@ -1,0 +1,870 @@
+{
+  "routine": {
+    "name": "Upper/Lower Hypertrophy & Fat Loss Routine",
+    "description": "4-day Upper/Lower dumbbell hypertrophy split with dedicated cardio sessions, modified double-progression rules, and fat-loss nutrition guidelines.",
+    "scheduleType": "WEEKLY",
+    "daysCount": 7,
+    "splitDays": [
+      {
+        "dayNumber": 1,
+        "dayLabel": "Day 1",
+        "title": "Upper A (Chest + Upper-Back Emphasis)",
+        "type": "HYPERTROPHY",
+        "targetMuscles": ["Chest", "Upper Back", "Front Deltoids", "Side Deltoids", "Biceps", "Triceps"],
+        "estimatedDurationMinutes": 55,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "flat_dumbbell_bench_press",
+            "name": "Flat Dumbbell Bench Press",
+            "equipment": "Dumbbells, Flat Bench",
+            "primaryMuscle": "Chest",
+            "secondaryMuscles": ["Triceps", "Anterior Deltoids"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 6,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 180,
+              "display": "2–3 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Stop at 1–2 RIR. Progress weight once hitting 12 reps on all 3 sets."
+          },
+          {
+            "order": 2,
+            "id": "chest_supported_dumbbell_row",
+            "name": "Chest-Supported Dumbbell Row",
+            "equipment": "Dumbbells, Incline Bench",
+            "primaryMuscle": "Upper Back",
+            "secondaryMuscles": ["Rhomboids", "Rear Deltoids", "Biceps"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Chest supported on bench prevents lower-back momentum and fatigue."
+          },
+          {
+            "order": 3,
+            "id": "low_incline_dumbbell_press_day1",
+            "name": "Low-Incline Dumbbell Press",
+            "equipment": "Dumbbells, Adjustable Bench (~15-30 deg)",
+            "primaryMuscle": "Upper Chest",
+            "secondaryMuscles": ["Anterior Deltoids", "Triceps"],
+            "targetSets": 2,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Use a low incline (15°–30°) to target clavicular head with minimal front delt shear."
+          },
+          {
+            "order": 4,
+            "id": "dumbbell_lateral_raises_day1",
+            "name": "Dumbbell Lateral Raises",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Side Deltoids",
+            "secondaryMuscles": ["Trapezius"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 12,
+              "max": 25,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "High rep range (12–25 reps) before increasing dumbbell weight."
+          },
+          {
+            "order": 5,
+            "id": "supinated_dumbbell_bicep_curls",
+            "name": "Supinated Dumbbell Bicep Curls",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Biceps",
+            "secondaryMuscles": ["Forearms"],
+            "targetSets": 2,
+            "repRange": {
+              "min": 10,
+              "max": 20,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Full supination at peak contraction; push up to 20 reps before weight jump."
+          },
+          {
+            "order": 6,
+            "id": "lying_dumbbell_triceps_extensions",
+            "name": "Lying Dumbbell Triceps Extensions",
+            "equipment": "Dumbbells, Flat Bench",
+            "primaryMuscle": "Triceps",
+            "secondaryMuscles": [],
+            "targetSets": 2,
+            "repRange": {
+              "min": 10,
+              "max": 20,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Skull crushers / lying extensions with dumbbells; control the eccentric phase."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "dayLabel": "Day 2",
+        "title": "Lower A (Quads + Hip-Hinge Hamstrings)",
+        "type": "HYPERTROPHY",
+        "targetMuscles": ["Quadriceps", "Hamstrings", "Glutes", "Calves", "Core"],
+        "estimatedDurationMinutes": 55,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "heel_elevated_dumbbell_squat",
+            "name": "Heel-Elevated Dumbbell Squat",
+            "alternatives": ["Goblet Squat"],
+            "equipment": "Dumbbell(s), Heel Wedge / Small Plates",
+            "primaryMuscle": "Quadriceps",
+            "secondaryMuscles": ["Glutes", "Core"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 10,
+              "max": 15,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 180,
+              "display": "2–3 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 3,
+              "display": "1–3 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Heel elevation increases quad recruitment. Goblet squat is acceptable alternative."
+          },
+          {
+            "order": 2,
+            "id": "dumbbell_romanian_deadlift_day2",
+            "name": "Dumbbell Romanian Deadlift (RDL)",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Hamstrings",
+            "secondaryMuscles": ["Glutes", "Erector Spinae"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 180,
+              "display": "2–3 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 3,
+              "display": "1–3 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Hinge at the hips with soft knees; stop when hamstrings reach full stretch."
+          },
+          {
+            "order": 3,
+            "id": "bulgarian_split_squat",
+            "name": "Bulgarian Split Squat",
+            "equipment": "Dumbbells, Bench",
+            "primaryMuscle": "Quadriceps",
+            "secondaryMuscles": ["Glutes", "Adductors"],
+            "targetSets": 3,
+            "targetSetsRange": "2–3",
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "8–12 reps per leg. Rest ~1-2 min between legs or 2 min per round."
+          },
+          {
+            "order": 4,
+            "id": "standing_dumbbell_calf_raises_day2",
+            "name": "Standing Dumbbell Calf Raises",
+            "equipment": "Dumbbells, Step/Block",
+            "primaryMuscle": "Calves",
+            "secondaryMuscles": [],
+            "targetSets": 3,
+            "repRange": {
+              "min": 12,
+              "max": 20,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Hold at full stretch for 1 second and pause at top."
+          },
+          {
+            "order": 5,
+            "id": "plank_or_reverse_crunch",
+            "name": "Plank",
+            "alternatives": ["Bench Reverse Crunches"],
+            "equipment": "Mat / Bench",
+            "primaryMuscle": "Core",
+            "secondaryMuscles": ["Rectus Abdominis", "Transverse Abdominis"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 30,
+              "max": 60,
+              "unit": "seconds",
+              "perSide": false,
+              "alternativeRepRange": {
+                "min": 10,
+                "max": 15,
+                "unit": "reps"
+              }
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 60,
+              "display": "60 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 1,
+              "display": "Stop before form breaks"
+            },
+            "progressionRule": "TIMED_CORE",
+            "notes": "Hold plank 30–60s, or perform Bench Reverse Crunches for 10–15 reps. Terminate before lower back sags."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "dayLabel": "Day 3",
+        "title": "Cardio & Active Recovery",
+        "type": "CARDIO",
+        "targetMuscles": ["Cardiovascular System"],
+        "estimatedDurationMinutes": 40,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "cardio_session_wednesday",
+            "name": "Low-to-Moderate Intensity Cardio",
+            "equipment": "Treadmill, Stationary Bike, or Outdoors",
+            "primaryMuscle": "Cardiovascular System",
+            "secondaryMuscles": ["Legs"],
+            "targetSets": 1,
+            "repRange": {
+              "min": 30,
+              "max": 40,
+              "unit": "minutes",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 0,
+              "max": 0,
+              "display": "N/A"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 0,
+              "display": "Conversational pace"
+            },
+            "progressionRule": "DURATION_DISTANCE",
+            "notes": "Brisk incline walking, cycling, or easy conversational jog (Zone 2). Separated from leg days."
+          }
+        ]
+      },
+      {
+        "dayNumber": 4,
+        "dayLabel": "Day 4",
+        "title": "Upper B (Shoulders + Lats Emphasis)",
+        "type": "HYPERTROPHY",
+        "targetMuscles": ["Shoulders", "Lats", "Upper Chest", "Rear Deltoids", "Biceps", "Triceps"],
+        "estimatedDurationMinutes": 60,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "low_incline_dumbbell_press_day4",
+            "name": "Low-Incline Dumbbell Press",
+            "equipment": "Dumbbells, Adjustable Bench",
+            "primaryMuscle": "Upper Chest",
+            "secondaryMuscles": ["Anterior Deltoids", "Triceps"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 180,
+              "display": "2–3 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Primary compound push for Day 4; solid arch and controlled eccentric."
+          },
+          {
+            "order": 2,
+            "id": "single_arm_tripod_dumbbell_row",
+            "name": "Single-Arm Tripod Dumbbell Row",
+            "equipment": "Dumbbells, Bench",
+            "primaryMuscle": "Lats",
+            "secondaryMuscles": ["Rhomboids", "Biceps"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "8–12 reps per side. Keep torso rigid and pull elbow back towards hip."
+          },
+          {
+            "order": 3,
+            "id": "neutral_grip_chest_supported_lat_row",
+            "name": "Neutral-Grip Chest-Supported Lat Row",
+            "equipment": "Dumbbells, Incline Bench",
+            "primaryMuscle": "Lats",
+            "secondaryMuscles": ["Lower Trapezius", "Rhomboids"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Replaces dumbbell pullover for safer and more stable lat loading on home bench."
+          },
+          {
+            "order": 4,
+            "id": "seated_dumbbell_shoulder_press",
+            "name": "Seated Dumbbell Shoulder Press",
+            "equipment": "Dumbbells, Bench with Back Support",
+            "primaryMuscle": "Anterior Deltoids",
+            "secondaryMuscles": ["Side Deltoids", "Triceps"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 8,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Seated at high incline/upright. Press in scapular plane (~30° forward)."
+          },
+          {
+            "order": 5,
+            "id": "dumbbell_lateral_raises_day4",
+            "name": "Dumbbell Lateral Raises",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Side Deltoids",
+            "secondaryMuscles": ["Trapezius"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 12,
+              "max": 25,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Added 2nd weekly slot to optimize shoulder hypertrophy frequency."
+          },
+          {
+            "order": 6,
+            "id": "incline_chest_supported_reverse_fly",
+            "name": "Incline Chest-Supported Reverse Fly",
+            "equipment": "Dumbbells, Incline Bench",
+            "primaryMuscle": "Rear Deltoids",
+            "secondaryMuscles": ["Rhomboids", "Mid Trapezius"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 12,
+              "max": 25,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Increased to 3 sets for complete posterior shoulder and postural development."
+          },
+          {
+            "order": 7,
+            "id": "dumbbell_hammer_curls",
+            "name": "Dumbbell Hammer Curls",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Brachialis",
+            "secondaryMuscles": ["Biceps Brachii", "Brachioradialis"],
+            "targetSets": 2,
+            "repRange": {
+              "min": 10,
+              "max": 20,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Neutral grip targets brachialis and forearm thickness."
+          },
+          {
+            "order": 8,
+            "id": "overhead_dumbbell_triceps_extension",
+            "name": "Overhead Dumbbell Triceps Extension",
+            "equipment": "Dumbbell(s), Bench or Standing",
+            "primaryMuscle": "Triceps (Long Head)",
+            "secondaryMuscles": [],
+            "targetSets": 2,
+            "repRange": {
+              "min": 10,
+              "max": 20,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Overhead angle maximizes stretch on the long head of the triceps."
+          }
+        ]
+      },
+      {
+        "dayNumber": 5,
+        "dayLabel": "Day 5",
+        "title": "Lower B (Glutes + Knee-Flexion Hamstrings)",
+        "type": "HYPERTROPHY",
+        "targetMuscles": ["Glutes", "Hamstrings", "Quadriceps", "Calves", "Core"],
+        "estimatedDurationMinutes": 55,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "dumbbell_reverse_lunges",
+            "name": "Dumbbell Reverse Lunges",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Glutes",
+            "secondaryMuscles": ["Quadriceps", "Hamstrings"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 10,
+              "max": 10,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "10 reps per leg. Stepping backward is kinder on knees and biases glutes."
+          },
+          {
+            "order": 2,
+            "id": "dumbbell_romanian_deadlift_day5",
+            "name": "Dumbbell Romanian Deadlift (RDL)",
+            "equipment": "Dumbbells",
+            "primaryMuscle": "Hamstrings",
+            "secondaryMuscles": ["Glutes", "Erector Spinae"],
+            "targetSets": 2,
+            "repRange": {
+              "min": 10,
+              "max": 12,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 120,
+              "max": 120,
+              "display": "2 min"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 3,
+              "display": "1–3 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "2 sets focused on clean hinge and deep stretch; slightly higher rep floor (10-12)."
+          },
+          {
+            "order": 3,
+            "id": "lying_dumbbell_leg_curl",
+            "name": "Lying Dumbbell Leg Curl",
+            "alternatives": ["Sliding Floor Bridge Curl"],
+            "equipment": "Dumbbell, Bench or Floor / Sliders",
+            "primaryMuscle": "Hamstrings (Knee Flexion)",
+            "secondaryMuscles": ["Calves"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 10,
+              "max": 15,
+              "unit": "reps",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 90,
+              "max": 90,
+              "display": "90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "Added fix for knee-flexion hamstring work without machines. Sliding floor bridge curl is a bodyweight alternative."
+          },
+          {
+            "order": 4,
+            "id": "single_leg_or_b_stance_dumbbell_hip_thrust",
+            "name": "Single-Leg Dumbbell Hip Thrust",
+            "alternatives": ["B-Stance Dumbbell Hip Thrust"],
+            "equipment": "Dumbbell, Bench",
+            "primaryMuscle": "Glutes",
+            "secondaryMuscles": ["Hamstrings"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 10,
+              "max": 15,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 90,
+              "max": 120,
+              "display": "90–120 sec"
+            },
+            "targetRIR": {
+              "min": 1,
+              "max": 2,
+              "display": "1–2 RIR"
+            },
+            "progressionRule": "COMPOUND_DOUBLE_PROGRESSION",
+            "notes": "Upgraded exercise: 10–15 reps per side. B-Stance offers greater balance with heavy home dumbbells."
+          },
+          {
+            "order": 5,
+            "id": "single_leg_standing_calf_raises_day5",
+            "name": "Single-Leg Standing Calf Raises",
+            "equipment": "Dumbbell (optional), Step",
+            "primaryMuscle": "Calves",
+            "secondaryMuscles": [],
+            "targetSets": 3,
+            "repRange": {
+              "min": 12,
+              "max": 20,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 90,
+              "display": "60–90 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 2,
+              "display": "0–2 RIR"
+            },
+            "progressionRule": "ISOLATION_HIGH_REP_PROGRESSION",
+            "notes": "12–20 reps per leg. Focus on pause at the bottom stretch."
+          },
+          {
+            "order": 6,
+            "id": "dead_bugs",
+            "name": "Dead Bugs",
+            "equipment": "Mat / Floor",
+            "primaryMuscle": "Transverse Abdominis",
+            "secondaryMuscles": ["Hip Flexors", "Rectus Abdominis"],
+            "targetSets": 3,
+            "repRange": {
+              "min": 10,
+              "max": 10,
+              "unit": "reps",
+              "perSide": true
+            },
+            "restTimeSeconds": {
+              "min": 60,
+              "max": 60,
+              "display": "60 sec"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 1,
+              "display": "Stop before form breaks"
+            },
+            "progressionRule": "TIMED_CORE",
+            "notes": "10 reps per side. Keep lower back firmly flat against floor throughout."
+          }
+        ]
+      },
+      {
+        "dayNumber": 6,
+        "dayLabel": "Day 6",
+        "title": "Cardio & Active Recovery",
+        "type": "CARDIO",
+        "targetMuscles": ["Cardiovascular System"],
+        "estimatedDurationMinutes": 40,
+        "exercises": [
+          {
+            "order": 1,
+            "id": "cardio_session_saturday",
+            "name": "Low-to-Moderate Intensity Cardio",
+            "equipment": "Treadmill, Stationary Bike, or Outdoors",
+            "primaryMuscle": "Cardiovascular System",
+            "secondaryMuscles": ["Legs"],
+            "targetSets": 1,
+            "repRange": {
+              "min": 30,
+              "max": 40,
+              "unit": "minutes",
+              "perSide": false
+            },
+            "restTimeSeconds": {
+              "min": 0,
+              "max": 0,
+              "display": "N/A"
+            },
+            "targetRIR": {
+              "min": 0,
+              "max": 0,
+              "display": "Conversational pace"
+            },
+            "progressionRule": "DURATION_DISTANCE",
+            "notes": "Second weekly cardio session: 30–40 min easy jog, brisk incline walk, or cycling."
+          }
+        ]
+      },
+      {
+        "dayNumber": 7,
+        "dayLabel": "Day 7",
+        "title": "Rest & Regeneration",
+        "type": "REST",
+        "targetMuscles": [],
+        "estimatedDurationMinutes": 0,
+        "exercises": []
+      }
+    ],
+    "effortGuidelines": {
+      "heavyCompoundLifts": {
+        "exercises": ["Presses", "Rows", "Squats", "Split Squats", "Lunges", "RDLs"],
+        "targetRIR": "1–3 RIR",
+        "description": "Stop with 1 to 3 clean reps in the tank. Equal hypertrophy with less central fatigue and minimal injury risk."
+      },
+      "singleJointAndIsolationLifts": {
+        "exercises": ["Lateral Raises", "Reverse Flyes", "Bicep Curls", "Triceps Extensions", "Leg Curls", "Calf Raises"],
+        "targetRIR": "0–2 RIR",
+        "description": "Stop 0 to 2 reps short of failure. Final set can be pushed to momentary failure."
+      },
+      "coreExercises": {
+        "exercises": ["Planks", "Dead Bugs", "Bench Reverse Crunches"],
+        "targetRIR": "Stop before form breaks",
+        "description": "Terminate set immediately before lower-back arching or abdominal control loss occurs."
+      }
+    },
+    "progressionRules": {
+      "compoundLifts": {
+        "repTarget": "6–12 or 8–12 reps",
+        "strategy": "Select a dumbbell weight allowing at least the bottom rep target (e.g. 8 reps) at 1–2 RIR. Maintain that weight until achieving maximum rep target across all sets (e.g., 12, 12, 12), then step up to the next dumbbell increment."
+      },
+      "isolationLifts": {
+        "armAndLegIsolations": "10–20 reps",
+        "deltoidIsolations": "12–25 reps",
+        "strategy": "Due to 25%–50% jumps between home dumbbells, build repetitions up to 20 reps (curls/triceps) or 25 reps (lateral raises/reverse flyes) before increasing weight."
+      }
+    },
+    "nutritionAndCardioProtocol": {
+      "cardio": {
+        "frequency": "2 sessions per week (Wednesday and Saturday)",
+        "durationMinutes": "30–40 min",
+        "intensity": "Low-to-moderate (brisk incline walking, cycling, or conversational jog)",
+        "dailyActivity": "Daily walking (step target)",
+        "rationale": "Separated from leg training days to prevent interference with strength or hypertrophy."
+      },
+      "weightLossRate": {
+        "weeklyTargetPercent": "0.5% – 0.7% of total body weight per week",
+        "weeklyTargetKg": "0.35 – 0.6 kg/week",
+        "weeklyTargetLbs": "0.8 – 1.3 lbs/week",
+        "crashDietWarning": "Avoid >1.0%–1.4% per week to preserve lean muscle and strength."
+      },
+      "proteinTargets": {
+        "formulaTotalBodyWeight": "1.8 to 2.2+ g per kg of body weight",
+        "formulaFatFreeMass": "2.3 to 3.1 g per kg of fat-free mass",
+        "brackets": [
+          { "bodyWeightRangeKg": "65–75 kg", "bodyWeightRangeLbs": "143–165 lbs", "proteinGramsPerDay": "135–165 g" },
+          { "bodyWeightRangeKg": "75–85 kg", "bodyWeightRangeLbs": "165–187 lbs", "proteinGramsPerDay": "150–185 g" },
+          { "bodyWeightRangeKg": "85–95+ kg", "bodyWeightRangeLbs": "187–210+ lbs", "proteinGramsPerDay": "165–210 g" }
+        ]
+      }
+    }
+  }
+}
