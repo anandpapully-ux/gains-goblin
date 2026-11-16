@@ -18,10 +18,7 @@ import com.healthvectors.fitness.core.designsystem.CalorieRing
 import com.healthvectors.fitness.core.designsystem.MacroBar
 import com.healthvectors.fitness.data.local.entity.MealEntryEntity
 import com.healthvectors.fitness.data.repository.NutritionRepository
-import com.healthvectors.fitness.data.repository.ProfileRepository
-import com.healthvectors.fitness.data.repository.RoutineRepository
 import com.healthvectors.fitness.domain.logic.Macros
-import com.healthvectors.fitness.domain.model.DayType
 import com.healthvectors.fitness.domain.model.MealType
 import com.healthvectors.fitness.domain.usecase.DailyTargets
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,24 +28,19 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
-data class NutritionUi(val date: LocalDate, val meals: List<MealEntryEntity>, val targets: Macros?, val dayType: DayType)
+data class NutritionUi(val date: LocalDate, val meals: List<MealEntryEntity>, val targets: Macros?, val note: String)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NutritionViewModel @Inject constructor(
     private val nutrition: NutritionRepository,
-    private val profiles: ProfileRepository,
-    private val routines: RoutineRepository,
     private val targets: DailyTargets
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now())
 
     val ui: StateFlow<NutritionUi> = date.flatMapLatest { d ->
-        combine(nutrition.meals(d), profiles.profile, profiles.latestWeight, routines.dayOfWeek(d.dayOfWeek.value)) { meals, p, w, day ->
-            val type = day?.type ?: DayType.REST
-            NutritionUi(d, meals, if (p != null && w != null) targets.forDay(p, w.weightKg, type, d) else null, type)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NutritionUi(LocalDate.now(), emptyList(), null, DayType.REST))
+        combine(nutrition.meals(d), targets.observe(d)) { meals, t -> NutritionUi(d, meals, t?.macros, t?.note.orEmpty()) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NutritionUi(LocalDate.now(), emptyList(), null, ""))
 
     fun shift(days: Long) = date.update { it.plusDays(days).coerceAtMost(LocalDate.now()) }
     fun delete(id: Long) = viewModelScope.launch { nutrition.deleteMeal(id) }
@@ -82,7 +74,8 @@ fun NutritionScreen(onAddFood: (String, String) -> Unit, vm: NutritionViewModel 
                             MacroBar("Protein", total.proteinG.toDouble(), t?.proteinG?.toDouble() ?: 0.0)
                             MacroBar("Carbs", total.carbsG.toDouble(), t?.carbsG?.toDouble() ?: 0.0)
                             MacroBar("Fat", total.fatG.toDouble(), t?.fatG?.toDouble() ?: 0.0)
-                            Text("${ui.dayType.name.lowercase()} day target", style = MaterialTheme.typography.labelSmall)
+                            if (ui.targets == null) Text("Complete your profile to see targets.", style = MaterialTheme.typography.labelSmall)
+                            else Text(ui.note, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }

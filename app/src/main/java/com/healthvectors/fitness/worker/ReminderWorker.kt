@@ -12,7 +12,11 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import com.healthvectors.fitness.MainActivity
 import com.healthvectors.fitness.data.local.FitnessDatabase
+import com.healthvectors.fitness.data.datastore.SettingsStore
+import com.healthvectors.fitness.domain.logic.Schedule
 import com.healthvectors.fitness.domain.model.DayType
+import com.healthvectors.fitness.domain.model.ScheduleMode
+import kotlinx.coroutines.flow.first
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -36,9 +40,16 @@ class ReminderWorker(private val ctx: Context, params: WorkerParameters) : Corou
         val zone = ZoneId.systemDefault()
         val start = today.atStartOfDay(zone).toInstant().toEpochMilli()
         val trainedToday = db.workoutDao().observeDoneSessionsSinceBlocking(start)
-        val day = db.routineDao().dayForWeekday(today.dayOfWeek.value)
-        if (trainedToday || day == null || day.type == DayType.REST) return Result.success()
-        notify("Time to train", "Today: ${day.title}")
+        if (trainedToday) return Result.success()
+        val mode = SettingsStore(ctx).settings.first().scheduleMode
+        val day = if (mode == ScheduleMode.ROTATION) {
+            val days = db.routineDao().observeDays().first()
+            val last = db.workoutDao().observeLastDoneDay().first()
+            val next = Schedule.nextInRotation(days.map { Schedule.Slot(it.id, it.dayOfWeek, it.type) }, last?.id)
+            days.firstOrNull { it.id == next?.id }
+        } else db.routineDao().dayForWeekday(today.dayOfWeek.value)
+        if (day == null || day.type == DayType.REST) return Result.success()
+        notify("Time to train", if (mode == ScheduleMode.ROTATION) "Next up: ${day.title}" else "Today: ${day.title}")
         return Result.success()
     }
 

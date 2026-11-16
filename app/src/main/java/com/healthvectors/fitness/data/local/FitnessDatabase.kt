@@ -1,5 +1,6 @@
 package com.healthvectors.fitness.data.local
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
@@ -20,8 +21,9 @@ class Converters {
         RoutineDayEntity::class, RoutineExerciseEntity::class, WorkoutSessionEntity::class,
         WorkoutSetEntity::class, FoodEntity::class, MealEntryEntity::class, WaterEntryEntity::class
     ],
-    version = 1,
-    exportSchema = true
+    version = 2,
+    exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)]
 )
 @TypeConverters(Converters::class)
 abstract class FitnessDatabase : RoomDatabase() {
@@ -29,4 +31,5 @@ abstract class FitnessDatabase : RoomDatabase() {
     abstract fun routineDao(): RoutineDao
     abstract fun workoutDao(): WorkoutDao
     abstract fun nutritionDao(): NutritionDao
+    abstract fun backupDao(): BackupDao
 }

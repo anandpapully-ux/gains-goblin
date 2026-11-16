@@ -1,0 +1,15 @@
+{
+ "format": "gains-goblin-plan",
+ "version": 1,
+ "name": "Blank plan",
+ "description": "Start from an empty week and add your own days and exercises.",
+ "days": [
+  {
+   "weekday": 1,
+   "title": "Rest",
+   "type": "REST",
+   "minutes": 0,
+   "exercises": []
+  }
+ ]
+}

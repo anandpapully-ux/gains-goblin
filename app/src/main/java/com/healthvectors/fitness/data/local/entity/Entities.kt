@@ -18,7 +18,11 @@ data class UserProfileEntity(
     val experience: Experience,
     val unitSystem: UnitSystem,
     val weeklyRatePct: Double,
-    val createdAt: Long
+    val createdAt: Long,
+    /** The user's own daily targets; null keeps the calculated value. */
+    val customKcal: Int? = null,
+    val customProteinG: Int? = null,
+    val customFatG: Int? = null
 )
 
 @Entity(tableName = "body_weight_entry", indices = [Index("date", unique = true)])
@@ -53,7 +57,9 @@ data class ExerciseEntity(
     val repUnit: String,
     val isUnilateral: Boolean,
     val alternatives: String = "",
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    /** Smallest weight jump for progression; null uses the default for its equipment. */
+    val incrementKg: Double? = null
 )
 
 @Entity(

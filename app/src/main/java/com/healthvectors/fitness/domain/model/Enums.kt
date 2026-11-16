@@ -31,3 +31,6 @@ enum class SessionStatus { ACTIVE, DONE, DISCARDED }
 enum class FoodSource { CUSTOM, OFF }
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/** WEEKLY: each plan day belongs to a weekday. ROTATION: train the next day in order whenever you go. */
+enum class ScheduleMode { WEEKLY, ROTATION }

@@ -60,6 +60,8 @@ android {
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     testOptions { unitTests.isReturnDefaultValues = true }
+    // Lets the migration test read exported Room schemas.
+    sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 }
 
 ksp {
@@ -97,6 +99,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
+    testImplementation("org.json:json:20240303") // real org.json for JVM tests (Android's is a stub there)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

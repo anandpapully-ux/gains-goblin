@@ -22,9 +22,13 @@ import com.healthvectors.fitness.data.local.entity.RoutineDayEntity
 import com.healthvectors.fitness.data.repository.*
 import com.healthvectors.fitness.domain.logic.DeloadDetector
 import com.healthvectors.fitness.domain.logic.Macros
+import com.healthvectors.fitness.domain.logic.Schedule
 import com.healthvectors.fitness.domain.logic.StreakCalculator
+import com.healthvectors.fitness.data.local.entity.WorkoutSessionEntity
 import com.healthvectors.fitness.domain.model.DayType
+import com.healthvectors.fitness.domain.model.ScheduleMode
 import com.healthvectors.fitness.domain.usecase.DailyTargets
+import com.healthvectors.fitness.domain.usecase.DayTargets
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -39,6 +43,7 @@ data class TodayUi(
     val exerciseCount: Int = 0,
     val activeSessionId: Long? = null,
     val targets: Macros? = null,
+    val targetNote: String = "",
     val eaten: Macros = Macros(0, 0, 0, 0),
     val waterMl: Int = 0,
     val waterGoalMl: Int = 2500,
@@ -46,7 +51,14 @@ data class TodayUi(
     val xp: Int = 0,
     val gamification: Boolean = true,
     val deload: Boolean = false,
+    val rotation: Boolean = false,
+    val trainedToday: Boolean = false,
     val loading: Boolean = true
+)
+
+private data class WorkoutPart(
+    val day: RoutineDayEntity?, val count: Int, val activeId: Long?, val done: List<WorkoutSessionEntity>,
+    val rotation: Boolean, val gapDays: Long
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,37 +67,46 @@ class TodayViewModel @Inject constructor(
     private val routines: RoutineRepository,
     private val workouts: WorkoutRepository,
     private val nutrition: NutritionRepository,
-    private val profiles: ProfileRepository,
-    private val targets: DailyTargets,
+    targets: DailyTargets,
     settings: SettingsStore
 ) : ViewModel() {
     private val today = LocalDate.now()
     private val dow = today.dayOfWeek.value
+    private val zone = ZoneId.systemDefault()
 
-    private val dayFlow = routines.dayOfWeek(dow)
-    private val itemsFlow = dayFlow.flatMapLatest { d -> if (d == null) flowOf(emptyList<RoutineExerciseWithExercise>()) else routines.items(d.id) }
+    /** Weekly mode: today's weekday. Rotation mode: the next training day after the last one finished. */
+    private val dayFlow: Flow<Pair<RoutineDayEntity?, Boolean>> = settings.settings.map { it.scheduleMode }.distinctUntilChanged()
+        .flatMapLatest { mode ->
+            if (mode == ScheduleMode.ROTATION) {
+                combine(routines.days, workouts.lastDoneDay) { days, last ->
+                    val next = Schedule.nextInRotation(days.map { Schedule.Slot(it.id, it.dayOfWeek, it.type) }, last?.id)
+                    days.firstOrNull { it.id == next?.id } to true
+                }
+            } else routines.dayOfWeek(dow).map { it to false }
+        }
+    private val itemsFlow = dayFlow.flatMapLatest { (d, _) -> if (d == null) flowOf(emptyList<RoutineExerciseWithExercise>()) else routines.items(d.id) }
 
-    private val workoutPart = combine(dayFlow, itemsFlow, workouts.activeSession, workouts.doneSessions()) { day, items, active, done ->
-        listOf(day, items.size, active?.id, done)
+    private val workoutPart = combine(dayFlow, itemsFlow, workouts.activeSession, workouts.doneSessions(), routines.days) { day, items, active, done, days ->
+        val gap = Schedule.streakGapDays(days.filter { it.type != DayType.REST }.map { it.dayOfWeek }.toSet())
+        WorkoutPart(day.first, items.size, active?.id, done, day.second, gap)
     }
-    private val foodPart = combine(nutrition.meals(today), nutrition.water(today), settings.settings) { meals, water, s ->
-        Triple(meals, water, s)
+    private val foodPart = combine(nutrition.meals(today), nutrition.water(today), settings.settings, targets.observe(today)) { meals, water, s, t ->
+        listOf(meals, water, s, t)
     }
 
-    val ui: StateFlow<TodayUi> = combine(workoutPart, foodPart, profiles.profile, profiles.latestWeight) { w, f, profile, weight ->
-        val day = w[0] as RoutineDayEntity?
-        @Suppress("UNCHECKED_CAST")
-        val done = w[3] as List<com.healthvectors.fitness.data.local.entity.WorkoutSessionEntity>
-        val (meals, water, s) = f
-        val zone = ZoneId.systemDefault()
-        val days = done.map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }
-        val tgt = if (profile != null && weight != null) targets.forDay(profile, weight.weightKg, day?.type ?: DayType.REST, today) else null
+    val ui: StateFlow<TodayUi> = combine(workoutPart, foodPart) { w, f ->
+        @Suppress("UNCHECKED_CAST") val meals = f[0] as List<com.healthvectors.fitness.data.local.entity.MealEntryEntity>
+        val water = f[1] as Int
+        val s = f[2] as com.healthvectors.fitness.data.datastore.AppSettings
+        val t = f[3] as DayTargets?
+        val sessionDays = w.done.map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }
         TodayUi(
-            day = day, exerciseCount = w[1] as Int, activeSessionId = w[2] as Long?, targets = tgt,
+            day = w.day, exerciseCount = w.count, activeSessionId = w.activeId, targets = t?.macros, targetNote = t?.note.orEmpty(),
             eaten = Macros(meals.sumOf { it.kcal }.toInt(), meals.sumOf { it.protein }.toInt(),
                 meals.sumOf { it.carbs }.toInt(), meals.sumOf { it.fat }.toInt()),
-            waterMl = water, waterGoalMl = s.waterGoalMl, streak = StreakCalculator.streak(days, today),
-            xp = done.size * 100, gamification = s.gamification, loading = false
+            waterMl = water, waterGoalMl = s.waterGoalMl, streak = StreakCalculator.streak(sessionDays, today, w.gapDays),
+            xp = w.done.size * 100, gamification = s.gamification, rotation = w.rotation,
+            trainedToday = today in sessionDays, loading = false
         )
     }.combine(deloadFlow()) { ui, deload -> ui.copy(deload = deload) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TodayUi())
@@ -150,10 +171,7 @@ fun TodayScreen(
                             MacroBar("Fat", ui.eaten.fatG.toDouble(), t.fatG.toDouble())
                         }
                     }
-                    Text(
-                        "Target adjusted for ${ui.day?.type?.name?.lowercase() ?: "rest"} day",
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Text(ui.targetNote, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -183,12 +201,16 @@ private fun WorkoutCard(ui: TodayUi, vm: TodayViewModel, onOpenSession: (Long) -
             when {
                 ui.loading -> CircularProgressIndicator()
                 day == null || day.type == DayType.REST -> {
-                    Text("Rest day", style = MaterialTheme.typography.titleLarge)
-                    Text("Recovery is where the muscle is built. Walk, stretch, hydrate.")
+                    Text(if (ui.rotation) "No training days in your plan" else "Rest day", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        if (ui.rotation) "Add exercises to a day in the Workout tab." else
+                            "Recovery is where the muscle is built. Walk, stretch, hydrate. Want to train anyway? Pick any day in the Workout tab."
+                    )
                 }
                 else -> {
+                    if (ui.rotation) Text(if (ui.trainedToday) "Done today. Next up:" else "Next in your rotation", style = MaterialTheme.typography.labelLarge)
                     Text(day.title, style = MaterialTheme.typography.titleLarge)
-                    Text("${ui.exerciseCount} exercises - about ${day.estimatedMinutes} min")
+                    Text("${ui.exerciseCount} exercises" + if (day.estimatedMinutes > 0) " - about ${day.estimatedMinutes} min" else "")
                     Button(
                         onClick = { vm.start(day.id, onOpenSession) },
                         modifier = Modifier.fillMaxWidth().height(52.dp)

@@ -95,8 +95,8 @@ class SessionViewModel @Inject constructor(
         val items = routines.getItems(dayId)
         val profile = profiles.getProfile()
         val unit = profile?.unitSystem ?: UnitSystem.METRIC
-        val step = Units.defaultStepKg(unit)
         val info = items.associate { r ->
+            val step = Units.stepKg(unit, r.exercise.equipment, r.exercise.incrementKg)
             val prev = workouts.lastSessionSets(r.exercise.id, sessionId)
             val repsBased = r.exercise.repUnit == "reps"
             val best = if (repsBased) {

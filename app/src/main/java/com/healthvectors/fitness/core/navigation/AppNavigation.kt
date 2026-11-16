@@ -19,7 +19,9 @@ import androidx.navigation.navArgument
 import com.healthvectors.fitness.data.datastore.AppSettings
 import com.healthvectors.fitness.data.datastore.SettingsStore
 import com.healthvectors.fitness.data.repository.RoutineRepository
+import com.healthvectors.fitness.feature.history.HistoryScreen
 import com.healthvectors.fitness.feature.nutrition.AddFoodScreen
+import com.healthvectors.fitness.feature.plans.PlansScreen
 import com.healthvectors.fitness.feature.nutrition.NutritionScreen
 import com.healthvectors.fitness.feature.onboarding.OnboardingScreen
 import com.healthvectors.fitness.feature.profile.ProfileScreen
@@ -44,7 +46,8 @@ class AppViewModel @Inject constructor(
     val settings: StateFlow<AppSettings?> =
         store.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    init { viewModelScope.launch { routines.ensureSeeded() } }
+    /** Adds any built-in exercises a new install or app update brings. Plans are chosen during onboarding. */
+    init { viewModelScope.launch { routines.syncLibrary() } }
 }
 
 object Routes {
@@ -57,6 +60,8 @@ object Routes {
     const val DAY = "day/{dayId}"
     const val SESSION = "session/{sessionId}"
     const val ADD_FOOD = "addfood/{date}/{meal}"
+    const val PLANS = "plans"
+    const val HISTORY = "history"
     fun day(id: Long) = "day/$id"
     fun session(id: Long) = "session/$id"
     fun addFood(date: String, meal: String) = "addfood/$date/$meal"
@@ -116,7 +121,15 @@ fun AppNavHost(startOnboarding: Boolean) {
                     onOpenNutrition = { nav.navigate(Routes.NUTRITION) }
                 )
             }
-            composable(Routes.WORKOUT) { WorkoutScreen(onOpenDay = { nav.navigate(Routes.day(it)) }) }
+            composable(Routes.WORKOUT) {
+                WorkoutScreen(
+                    onOpenDay = { nav.navigate(Routes.day(it)) },
+                    onOpenPlans = { nav.navigate(Routes.PLANS) },
+                    onOpenHistory = { nav.navigate(Routes.HISTORY) }
+                )
+            }
+            composable(Routes.PLANS) { PlansScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.HISTORY) { HistoryScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.NUTRITION) { NutritionScreen(onAddFood = { d, m -> nav.navigate(Routes.addFood(d, m)) }) }
             composable(Routes.PROGRESS) { ProgressScreen() }
             composable(Routes.PROFILE) { ProfileScreen() }

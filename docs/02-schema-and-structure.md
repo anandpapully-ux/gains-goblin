@@ -15,6 +15,10 @@ Enums are stored as text via TypeConverters.
 
 UI preferences (theme, gym mode, rest-timer sound, reminders) live in DataStore, not Room.
 
+Schema version 2 (app 1.1.0) adds, via Room auto-migration: `user_profile.customKcal/customProteinG/customFatG`
+(user's own targets, null = calculated) and `exercise.incrementKg` (weight jump, null = equipment default).
+Several routines can exist; exactly one has `isActive = 1`.
+
 ### Exercises and routine
 | Table | Columns |
 |---|---|
@@ -59,11 +63,11 @@ routine_day 1-* workout_session 1-* workout_set *-1 exercise
 workout_set 1-0..1 personal_record
 food 1-* meal_entry
 ```
-Seeding: first launch parses `assets/workout_plan.json`, inserts the exercises, one routine, 7 days and
-their routine exercises in a single transaction, and records a `seeded` flag in DataStore. The Day 1/4
-duplicates (Low-Incline Press, Lateral Raises) are the same `exercise` row with two `routine_exercise`
-rows, so history and PRs are shared. Where the JSON gives two slugs (`..._day1`/`..._day4`), the seeder
-maps them to one canonical slug.
+Seeding: every launch adds any missing built-in exercises (`assets/exercise_library.json` plus the exercises of
+`assets/workout_plan.json`) by slug, never changing existing rows. The routine is created when the user picks a
+starter plan during onboarding (or later under My plans); `RoutineRepository.createFromPlan` inserts the routine,
+its 7 day slots and their exercises in one transaction, matching exercises by slug so history and PRs are shared
+across plans. The original plan's `..._day1`/`..._day4` duplicates map to one canonical slug.
 
 ## Folder structure
 ```
@@ -86,7 +90,7 @@ myfitnesspal144p/
           logic/       OneRepMax, Progression, CalorieCalculator, PlateCalculator, WarmupGenerator, PrDetector
           usecase/     per feature
         data/
-          local/       FitnessDatabase, dao/, entity/, converters/, seed/PlanSeeder
+          local/       FitnessDatabase, dao/, entity/, converters/; plan/PlanAssets (library + templates)
           repository/  *Impl
           datastore/   SettingsStore
           remote/      OpenFoodFacts (v2)

@@ -1,0 +1,634 @@
+{
+ "format": "gains-goblin-plan",
+ "version": 1,
+ "name": "Push/Pull/Legs 6-Day (Gym)",
+ "description": "Each muscle twice a week over six sessions (Mon-Sat). High volume for experienced lifters; switch to rotation mode if you train fewer days.",
+ "days": [
+  {
+   "weekday": 1,
+   "title": "Push",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "barbell_bench_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_overhead_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "low_incline_dumbbell_press",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "cable_lateral_raise",
+     "sets": 3,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "triceps_pushdown",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "overhead_cable_triceps_extension",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 2,
+   "title": "Pull",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "pull_up",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_row",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_cable_row",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "face_pull",
+     "sets": 3,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_curl",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_hammer_curls",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 3,
+   "title": "Legs",
+   "type": "HYPERTROPHY",
+   "minutes": 65,
+   "exercises": [
+    {
+     "exercise": "barbell_back_squat",
+     "sets": 3,
+     "reps": [
+      5,
+      8
+     ],
+     "rest": [
+      150,
+      240
+     ],
+     "rir": [
+      1,
+      3
+     ]
+    },
+    {
+     "exercise": "barbell_romanian_deadlift",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "leg_press",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_leg_curl",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "standing_calf_raise_machine",
+     "sets": 3,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "hanging_leg_raise",
+     "sets": 2,
+     "reps": [
+      8,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 4,
+   "title": "Push 2",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "barbell_bench_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_overhead_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "low_incline_dumbbell_press",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "cable_lateral_raise",
+     "sets": 3,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "triceps_pushdown",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "overhead_cable_triceps_extension",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 5,
+   "title": "Pull 2",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "pull_up",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_row",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_cable_row",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "face_pull",
+     "sets": 3,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_curl",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_hammer_curls",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 6,
+   "title": "Legs 2",
+   "type": "HYPERTROPHY",
+   "minutes": 65,
+   "exercises": [
+    {
+     "exercise": "barbell_back_squat",
+     "sets": 3,
+     "reps": [
+      5,
+      8
+     ],
+     "rest": [
+      150,
+      240
+     ],
+     "rir": [
+      1,
+      3
+     ]
+    },
+    {
+     "exercise": "barbell_romanian_deadlift",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "leg_press",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_leg_curl",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "standing_calf_raise_machine",
+     "sets": 3,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "hanging_leg_raise",
+     "sets": 2,
+     "reps": [
+      8,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  }
+ ]
+}

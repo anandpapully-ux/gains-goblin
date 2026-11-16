@@ -39,6 +39,9 @@ interface ProfileDao {
 
     @Query("SELECT * FROM body_weight_entry ORDER BY date")
     suspend fun allWeights(): List<BodyWeightEntity>
+
+    @Query("DELETE FROM body_measurement WHERE id = :id")
+    suspend fun deleteMeasurement(id: Long)
 }
 
 data class RoutineExerciseWithExercise(
@@ -97,6 +100,27 @@ interface RoutineDao {
     @Query("SELECT muscle FROM exercise_muscle WHERE exerciseId = :id AND role = 'SECONDARY'")
     suspend fun secondaryMuscles(id: Long): List<String>
 
+    @Query("SELECT * FROM routine ORDER BY id") fun observeRoutines(): Flow<List<RoutineEntity>>
+    @Query("SELECT * FROM routine WHERE isActive = 1 LIMIT 1") fun observeActiveRoutine(): Flow<RoutineEntity?>
+    @Query("SELECT * FROM routine WHERE id = :id") suspend fun getRoutine(id: Long): RoutineEntity?
+    /** Makes exactly one routine active. */
+    @Query("UPDATE routine SET isActive = (id = :id)") suspend fun activate(id: Long)
+    @Query("UPDATE routine SET name = :name WHERE id = :id") suspend fun rename(id: Long, name: String)
+    @Query("DELETE FROM routine WHERE id = :id") suspend fun deleteRoutine(id: Long)
+    @Query("SELECT * FROM routine_day WHERE routineId = :routineId ORDER BY dayOfWeek") suspend fun daysOf(routineId: Long): List<RoutineDayEntity>
+    @Update suspend fun updateDay(d: RoutineDayEntity)
+    @Update suspend fun updateExercise(e: ExerciseEntity)
+    @Query("SELECT * FROM exercise WHERE slug = :slug") suspend fun exerciseBySlug(slug: String): ExerciseEntity?
+    @Query("SELECT slug FROM exercise") suspend fun allSlugs(): List<String>
+    @Query("SELECT * FROM exercise_muscle WHERE exerciseId = :id") suspend fun musclesOf(id: Long): List<ExerciseMuscleEntity>
+
+    /** Exchanges the weekday (or rotation position) of two days of the same plan. */
+    @Transaction
+    suspend fun swapDays(a: RoutineDayEntity, b: RoutineDayEntity) {
+        updateDay(a.copy(dayOfWeek = b.dayOfWeek))
+        updateDay(b.copy(dayOfWeek = a.dayOfWeek))
+    }
+
     /** Swaps the order of two items in one transaction (used for move up/down). */
     @Transaction
     suspend fun swapPositions(a: RoutineExerciseEntity, b: RoutineExerciseEntity) {
@@ -106,6 +130,11 @@ interface RoutineDao {
 }
 
 data class MuscleSets(val muscle: String, val sets: Int)
+data class SessionRow(
+    val id: Long, val startedAt: Long, val endedAt: Long?, val caloriesBurned: Double?, val dayTitle: String?,
+    val setCount: Int, val volumeKg: Double, val prCount: Int
+)
+data class SetWithName(@Embedded val set: WorkoutSetEntity, val exerciseName: String, val repUnit: String)
 data class BestRow(val maxWeight: Double?, val maxE1rm: Double?)
 
 @Dao
@@ -172,8 +201,56 @@ interface WorkoutDao {
     )
     fun observeMuscleSetsSince(from: Long): Flow<List<MuscleSets>>
 
-    @Query("SELECT DISTINCT primaryMuscle FROM exercise")
-    suspend fun allPrimaryMuscles(): List<String>
+    /** Primary muscles of the exercises in the active plan (what the heatmap should cover). */
+    @Query(
+        "SELECT DISTINCT e.primaryMuscle FROM exercise e JOIN routine_exercise ri ON ri.exerciseId = e.id " +
+            "JOIN routine_day d ON d.id = ri.dayId JOIN routine r ON r.id = d.routineId " +
+            "WHERE r.isActive = 1 AND e.repUnit = 'reps'"
+    )
+    suspend fun planPrimaryMuscles(): List<String>
+
+    /** Rep-based exercises that are in the active plan or have logged history (for the strength chart). */
+    @Query(
+        "SELECT * FROM exercise WHERE repUnit = 'reps' AND (id IN (SELECT DISTINCT exerciseId FROM workout_set) OR id IN " +
+            "(SELECT ri.exerciseId FROM routine_exercise ri JOIN routine_day d ON d.id = ri.dayId JOIN routine r ON r.id = d.routineId WHERE r.isActive = 1)) " +
+            "ORDER BY name"
+    )
+    fun observeChartExercises(): Flow<List<ExerciseEntity>>
+
+    @Query(
+        "SELECT s.id AS id, s.startedAt AS startedAt, s.endedAt AS endedAt, s.caloriesBurned AS caloriesBurned, d.title AS dayTitle, " +
+            "(SELECT COUNT(*) FROM workout_set w WHERE w.sessionId = s.id) AS setCount, " +
+            "(SELECT COALESCE(SUM(w.weightKg * w.reps), 0) FROM workout_set w JOIN exercise e ON e.id = w.exerciseId " +
+            "WHERE w.sessionId = s.id AND w.isWarmup = 0 AND e.repUnit = 'reps') AS volumeKg, " +
+            "(SELECT COUNT(*) FROM workout_set w WHERE w.sessionId = s.id AND w.isPr = 1) AS prCount " +
+            "FROM workout_session s LEFT JOIN routine_day d ON d.id = s.routineDayId WHERE s.status = 'DONE' ORDER BY s.startedAt DESC"
+    )
+    fun observeHistory(): Flow<List<SessionRow>>
+
+    @Query(
+        "SELECT w.*, e.name AS exerciseName, e.repUnit AS repUnit FROM workout_set w JOIN exercise e ON e.id = w.exerciseId " +
+            "WHERE w.sessionId = :sessionId ORDER BY w.completedAt"
+    )
+    fun observeSessionSets(sessionId: Long): Flow<List<SetWithName>>
+
+    @Query("SELECT * FROM workout_set WHERE sessionId = :sessionId") suspend fun setsForSession(sessionId: Long): List<WorkoutSetEntity>
+
+    @Query(
+        "SELECT COALESCE(SUM(w.weightKg * w.reps), 0) FROM workout_set w JOIN exercise e ON e.id = w.exerciseId " +
+            "WHERE w.sessionId = :sessionId AND w.isWarmup = 0 AND e.repUnit = 'reps'"
+    )
+    suspend fun sessionVolume(sessionId: Long): Double
+
+    /** Day of the most recent finished session in the active plan (drives rotation mode). */
+    @Query(
+        "SELECT d.* FROM workout_session s JOIN routine_day d ON d.id = s.routineDayId " +
+            "WHERE s.status = 'DONE' AND d.routineId = (SELECT id FROM routine WHERE isActive = 1 LIMIT 1) " +
+            "ORDER BY s.startedAt DESC LIMIT 1"
+    )
+    fun observeLastDoneDay(): Flow<RoutineDayEntity?>
+
+    @Query("SELECT d.* FROM workout_session s JOIN routine_day d ON d.id = s.routineDayId WHERE s.id = :sessionId")
+    suspend fun dayOfSession(sessionId: Long): RoutineDayEntity?
 
     @Query("SELECT AVG(rpe) FROM workout_set WHERE sessionId = :sessionId AND rpe IS NOT NULL")
     suspend fun avgRpe(sessionId: Long): Double?
@@ -213,4 +290,51 @@ interface NutritionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun restoreMeals(l: List<MealEntryEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun restoreWater(l: List<WaterEntryEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun restoreWeights(l: List<BodyWeightEntity>)
+}
+
+/** Whole-database backup and restore. Deletes run children-first so foreign keys never dangle. */
+@Dao
+interface BackupDao {
+    @Query("SELECT * FROM user_profile") suspend fun profiles(): List<UserProfileEntity>
+    @Query("SELECT * FROM body_measurement ORDER BY date") suspend fun measurements(): List<BodyMeasurementEntity>
+    @Query("SELECT * FROM exercise") suspend fun exercises(): List<ExerciseEntity>
+    @Query("SELECT * FROM exercise_muscle") suspend fun exerciseMuscles(): List<ExerciseMuscleEntity>
+    @Query("SELECT * FROM routine") suspend fun routines(): List<RoutineEntity>
+    @Query("SELECT * FROM routine_day") suspend fun days(): List<RoutineDayEntity>
+    @Query("SELECT * FROM routine_exercise") suspend fun items(): List<RoutineExerciseEntity>
+    @Query("SELECT id FROM exercise") suspend fun exerciseIds(): List<Long>
+    @Query("SELECT id FROM food") suspend fun foodIds(): List<Long>
+
+    @Query("DELETE FROM workout_set") suspend fun clearSets()
+    @Query("DELETE FROM workout_session") suspend fun clearSessions()
+    @Query("DELETE FROM routine_exercise") suspend fun clearItems()
+    @Query("DELETE FROM routine_day") suspend fun clearDays()
+    @Query("DELETE FROM routine") suspend fun clearRoutines()
+    @Query("DELETE FROM exercise_muscle") suspend fun clearMuscles()
+    @Query("DELETE FROM exercise") suspend fun clearExercises()
+    @Query("DELETE FROM meal_entry") suspend fun clearMeals()
+    @Query("DELETE FROM food") suspend fun clearFoods()
+    @Query("DELETE FROM water_entry") suspend fun clearWater()
+    @Query("DELETE FROM body_weight_entry") suspend fun clearWeights()
+    @Query("DELETE FROM body_measurement") suspend fun clearMeasurements()
+    @Query("DELETE FROM user_profile") suspend fun clearProfile()
+
+    @Insert suspend fun insertProfiles(l: List<UserProfileEntity>)
+    @Insert suspend fun insertMeasurements(l: List<BodyMeasurementEntity>)
+    @Insert suspend fun insertExercises(l: List<ExerciseEntity>)
+    @Insert suspend fun insertMuscles(l: List<ExerciseMuscleEntity>)
+    @Insert suspend fun insertRoutines(l: List<RoutineEntity>)
+    @Insert suspend fun insertDays(l: List<RoutineDayEntity>)
+    @Insert suspend fun insertItems(l: List<RoutineExerciseEntity>)
+    @Insert suspend fun insertSessions(l: List<WorkoutSessionEntity>)
+    @Insert suspend fun insertSets(l: List<WorkoutSetEntity>)
+    @Insert suspend fun insertFoods(l: List<FoodEntity>)
+    @Insert suspend fun insertMeals(l: List<MealEntryEntity>)
+    @Insert suspend fun insertWater(l: List<WaterEntryEntity>)
+    @Insert suspend fun insertWeights(l: List<BodyWeightEntity>)
+
+    suspend fun clearAll() {
+        clearSets(); clearSessions(); clearItems(); clearDays(); clearRoutines(); clearMuscles(); clearExercises()
+        clearMeals(); clearFoods(); clearWater(); clearWeights(); clearMeasurements(); clearProfile()
+    }
 }

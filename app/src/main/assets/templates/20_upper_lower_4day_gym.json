@@ -1,0 +1,458 @@
+{
+ "format": "gains-goblin-plan",
+ "version": 1,
+ "name": "Upper/Lower 4-Day (Gym)",
+ "description": "Upper and lower body twice a week (Mon/Tue/Thu/Fri) with barbells, cables and machines. Intermediate lifters.",
+ "days": [
+  {
+   "weekday": 1,
+   "title": "Upper A",
+   "type": "HYPERTROPHY",
+   "minutes": 65,
+   "exercises": [
+    {
+     "exercise": "barbell_bench_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_row",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_dumbbell_shoulder_press",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "lat_pulldown",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_lateral_raises",
+     "sets": 2,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "triceps_pushdown",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "barbell_curl",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 2,
+   "title": "Lower A",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "barbell_back_squat",
+     "sets": 3,
+     "reps": [
+      5,
+      8
+     ],
+     "rest": [
+      150,
+      240
+     ],
+     "rir": [
+      1,
+      3
+     ]
+    },
+    {
+     "exercise": "barbell_romanian_deadlift",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "leg_extension",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_leg_curl",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "standing_calf_raise_machine",
+     "sets": 3,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "cable_crunch",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 4,
+   "title": "Upper B",
+   "type": "HYPERTROPHY",
+   "minutes": 65,
+   "exercises": [
+    {
+     "exercise": "incline_barbell_bench_press",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "pull_up",
+     "sets": 3,
+     "reps": [
+      6,
+      10
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_cable_row",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "cable_lateral_raise",
+     "sets": 2,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "face_pull",
+     "sets": 2,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "incline_dumbbell_curl",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "overhead_cable_triceps_extension",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 5,
+   "title": "Lower B",
+   "type": "HYPERTROPHY",
+   "minutes": 60,
+   "exercises": [
+    {
+     "exercise": "barbell_deadlift",
+     "sets": 3,
+     "reps": [
+      3,
+      6
+     ],
+     "rest": [
+      150,
+      240
+     ],
+     "rir": [
+      1,
+      3
+     ]
+    },
+    {
+     "exercise": "leg_press",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "bulgarian_split_squat",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "lying_leg_curl_machine",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "seated_calf_raise",
+     "sets": 3,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "hanging_leg_raise",
+     "sets": 2,
+     "reps": [
+      8,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    }
+   ]
+  }
+ ]
+}

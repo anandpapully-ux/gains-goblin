@@ -16,7 +16,10 @@ import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.local.entity.ExerciseEntity
 import com.healthvectors.fitness.data.repository.*
 import com.healthvectors.fitness.domain.logic.OneRepMax
+import com.healthvectors.fitness.domain.logic.Schedule
 import com.healthvectors.fitness.domain.logic.StreakCalculator
+import com.healthvectors.fitness.domain.model.DayType
+import androidx.compose.material.icons.filled.Delete
 import com.healthvectors.fitness.domain.model.UnitSystem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,8 +56,8 @@ class ProgressViewModel @Inject constructor(
     val measureType = MutableStateFlow(MEASUREMENTS.first())
     val measurements = measureType.flatMapLatest { profiles.measurements(it.lowercase()) }.state(emptyList())
 
-    val exercises: StateFlow<List<ExerciseEntity>> =
-        routines.exercises.map { l -> l.filter { it.repUnit == "reps" } }.state(emptyList())
+    /** Exercises in the current plan or with logged sets; the full library would bury them. */
+    val exercises: StateFlow<List<ExerciseEntity>> = workouts.chartExercises.state(emptyList())
     val selectedExercise = MutableStateFlow<Long?>(null)
     val strength = combine(exercises, selectedExercise) { ex, sel -> sel ?: ex.firstOrNull()?.id }
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else workouts.exerciseHistory(id) }
@@ -83,14 +86,15 @@ class ProgressViewModel @Inject constructor(
         }
     }.state(emptyList())
 
-    /** Sets trained per primary muscle this week; zero means neglected. */
-    val heatmap = workouts.muscleSetsSince(millis(weekStart)).map { rows ->
+    /** Sets trained per primary muscle this week; a muscle your plan targets with zero sets is neglected. */
+    val heatmap = combine(workouts.muscleSetsSince(millis(weekStart)), routines.days) { rows, _ ->
         val trained = rows.associate { it.muscle to it.sets }
-        workouts.allPrimaryMuscles().map { MuscleHeat(it, trained[it] ?: 0) }.sortedByDescending { it.sets }
+        (workouts.planPrimaryMuscles() + trained.keys).distinct().map { MuscleHeat(it, trained[it] ?: 0) }.sortedByDescending { it.sets }
     }.state(emptyList())
 
-    val streak = workouts.doneSessions().map { s ->
-        StreakCalculator.streak(s.map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }, today)
+    val streak = combine(workouts.doneSessions(), routines.days) { s, days ->
+        val gap = Schedule.streakGapDays(days.filter { it.type != DayType.REST }.map { it.dayOfWeek }.toSet())
+        StreakCalculator.streak(s.map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }, today, gap)
     }.state(0)
 
     val summary = combine(workouts.doneSessionsSince(millis(today.minusDays(29))), workouts.repSetsSince(millis(weekStart)), nutrition.mealsSince(today.minusDays(6))) { sessions, sets, meals ->
@@ -100,6 +104,8 @@ class ProgressViewModel @Inject constructor(
     }.state(Summary(0, 0.0, 0, 0))
 
     fun logWeight(kg: Double) = viewModelScope.launch { profiles.logWeight(kg) }
+    fun deleteWeight(id: Long) = viewModelScope.launch { profiles.deleteWeight(id) }
+    fun deleteMeasurement(id: Long) = viewModelScope.launch { profiles.deleteMeasurement(id) }
     fun logMeasurement(cm: Double) = viewModelScope.launch { profiles.logMeasurement(measureType.value.lowercase(), cm) }
 }
 
@@ -120,6 +126,7 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
     val summary by vm.summary.collectAsStateWithLifecycle()
     var weightDialog by remember { mutableStateOf(false) }
     var measureDialog by remember { mutableStateOf(false) }
+    var entries by remember { mutableStateOf<String?>(null) }
     var menu by remember { mutableStateOf(false) }
     val label = Units.weightLabel(unit)
 
@@ -137,6 +144,7 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
             item {
                 ChartCard("Body weight ($label)", onAction = { weightDialog = true }, actionLabel = "Log weight") {
                     LineChart(weights.map { ChartPoint(it.date.toString().substring(5), Units.weightToDisplay(it.weightKg, unit)) }, description = "Body weight trend")
+                    if (weights.isNotEmpty()) TextButton(onClick = { entries = "weight" }) { Text("Edit entries (${weights.size})") }
                 }
             }
             item {
@@ -145,6 +153,7 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
                         MEASUREMENTS.forEach { m -> FilterChip(measureType == m, { vm.measureType.value = m }, { Text(m) }) }
                     }
                     LineChart(measurements.map { ChartPoint(it.date.toString().substring(5), it.valueCm) }, description = "$measureType trend")
+                    if (measurements.isNotEmpty()) TextButton(onClick = { entries = "measure" }) { Text("Edit entries (${measurements.size})") }
                 }
             }
             item {
@@ -200,6 +209,28 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
         }
     }
 
+    entries?.let { kind ->
+        val rows: List<Triple<Long, String, String>> = if (kind == "weight") weights.reversed().map { Triple(it.id, it.date.toString(), Units.fmtWeight(it.weightKg, unit)) }
+        else measurements.reversed().map { Triple(it.id, it.date.toString(), "${Units.fmt(it.valueCm)} cm") }
+        AlertDialog(
+            onDismissRequest = { entries = null },
+            title = { Text(if (kind == "weight") "Weight entries" else "$measureType entries") },
+            text = {
+                LazyColumn(Modifier.heightIn(max = 400.dp)) {
+                    items(rows.size) { i ->
+                        val (id, date, value) = rows[i]
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text("$date   $value", Modifier.weight(1f))
+                            IconButton(onClick = { if (kind == "weight") vm.deleteWeight(id) else vm.deleteMeasurement(id) }) {
+                                Icon(androidx.compose.material.icons.Icons.Filled.Delete, "Delete entry from $date")
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { entries = null }) { Text("Done") } }
+        )
+    }
     if (weightDialog) ValueDialog("Log weight", label, onDismiss = { weightDialog = false }) { vm.logWeight(Units.weightFromDisplay(it, unit)) }
     if (measureDialog) ValueDialog("Log $measureType", "cm", onDismiss = { measureDialog = false }) { vm.logMeasurement(it) }
 }

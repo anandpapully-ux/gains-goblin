@@ -46,17 +46,44 @@ object CalorieCalculator {
     }
 
     /**
-     * Workout-aware targets: training days eat ~6 % more, rest/cardio days ~8 % less (net ~0 over a
-     * 4-train/3-off week). Protein and fat stay fixed; the delta is carbs.
+     * Training-day calorie cycling that keeps the weekly total equal to 7 x base: training days get
+     * +6 % and the other days give back the same amount (at most -10 %, in which case the training-day
+     * bonus shrinks instead). Returns (training factor, other-day factor).
      */
-    fun adjustForDay(base: Macros, type: DayType): Macros {
-        val factor = when (type) {
-            DayType.HYPERTROPHY -> 1.06
-            DayType.CARDIO, DayType.REST -> 0.92
+    fun cyclingFactors(trainingDays: Int): Pair<Double, Double> {
+        if (trainingDays !in 1..6) return 1.0 to 1.0
+        var up = 0.06
+        var down = up * trainingDays / (7 - trainingDays)
+        if (down > 0.10) {
+            down = 0.10
+            up = down * (7 - trainingDays) / trainingDays
         }
+        return (1 + up) to (1 - down)
+    }
+
+    /**
+     * Workout-aware targets for a plan with [trainingDays] lifting days per week. Protein and fat stay
+     * fixed; the difference is carbs. With 4 training days this is +6 % / -8 %.
+     */
+    fun adjustForDay(base: Macros, type: DayType, trainingDays: Int = 4): Macros {
+        val (up, down) = cyclingFactors(trainingDays)
+        val factor = if (type == DayType.HYPERTROPHY) up else down
         val newKcal = (base.kcal * factor).roundToInt()
         val deltaCarbs = ((newKcal - base.kcal) / 4.0).roundToInt()
         return base.copy(kcal = newKcal, carbsG = (base.carbsG + deltaCarbs).coerceAtLeast(0))
+    }
+
+    /**
+     * Applies the user's own targets. Any value left null keeps the calculated one (fat follows a custom
+     * calorie target at 25 %); carbs always fill the remaining calories.
+     */
+    fun withOverrides(computed: Macros, kcal: Int?, proteinG: Int?, fatG: Int?): Macros {
+        if (kcal == null && proteinG == null && fatG == null) return computed
+        val k = kcal ?: computed.kcal
+        val p = proteinG ?: computed.proteinG
+        val f = fatG ?: if (kcal != null) (k * 0.25 / 9.0).roundToInt() else computed.fatG
+        val c = ((k - p * 4 - f * 9) / 4.0).roundToInt().coerceAtLeast(0)
+        return Macros(k, p, c, f)
     }
 
     fun workoutBurn(met: Double, weightKg: Double, minutes: Double): Double = met * weightKg * minutes / 60.0

@@ -134,7 +134,7 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
 
     if (plate) PlateDialog(null) { plate = false }
     warmupFor?.let { b ->
-        val kg = b.rows.firstOrNull { !it.done }?.weight?.toDoubleOrNull()?.let { Units.weightFromDisplay(it, if (ui.weightUnit == "kg") com.healthvectors.fitness.domain.model.UnitSystem.METRIC else com.healthvectors.fitness.domain.model.UnitSystem.IMPERIAL) }
+        val kg = b.rows.firstOrNull { !it.done }?.weight?.toDoubleOrNull()?.let { Units.weightFromDisplay(it, unitOf(ui.weightUnit)) }
         WarmupDialog(kg) { warmupFor = null }
     }
     if (confirmFinish) AlertDialog(
@@ -161,7 +161,7 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
                 else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Duration: ${s.durationMin} min")
                     Text("Sets: ${s.sets}")
-                    Text("Volume: ${Units.fmt(s.volumeKg)} kg")
+                    Text("Volume: ${Units.fmt(Units.weightToDisplay(s.volumeKg, unitOf(ui.weightUnit)))} ${ui.weightUnit}")
                     Text("Estimated burn: ${s.kcal.toInt()} kcal")
                     if (s.prCount > 0) Text("Personal records: ${s.prCount}", style = MaterialTheme.typography.titleMedium)
                 }
@@ -253,3 +253,6 @@ private fun SetRow(block: BlockUi, row: SetRowUi, unitLabel: String, vm: Session
         }
     }
 }
+
+private fun unitOf(label: String) =
+    if (label == "kg") com.healthvectors.fitness.domain.model.UnitSystem.METRIC else com.healthvectors.fitness.domain.model.UnitSystem.IMPERIAL

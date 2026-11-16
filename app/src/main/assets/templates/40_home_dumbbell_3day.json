@@ -1,0 +1,362 @@
+{
+ "format": "gains-goblin-plan",
+ "version": 1,
+ "name": "Home Dumbbells 3-Day",
+ "description": "Full body at home with a pair of adjustable dumbbells and a bench or chair (Mon/Wed/Fri), plus one easy cardio day.",
+ "days": [
+  {
+   "weekday": 1,
+   "title": "Home A",
+   "type": "HYPERTROPHY",
+   "minutes": 45,
+   "exercises": [
+    {
+     "exercise": "goblet_squat",
+     "sets": 3,
+     "reps": [
+      8,
+      15
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "push_up",
+     "sets": 3,
+     "reps": [
+      8,
+      20
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_bent_over_row",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_romanian_deadlift",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_lateral_raises",
+     "sets": 2,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "plank_or_reverse_crunch",
+     "sets": 3,
+     "reps": [
+      30,
+      60
+     ],
+     "rest": [
+      45,
+      60
+     ],
+     "rir": [
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 3,
+   "title": "Home B",
+   "type": "HYPERTROPHY",
+   "minutes": 45,
+   "exercises": [
+    {
+     "exercise": "dumbbell_reverse_lunges",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "seated_dumbbell_shoulder_press",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "single_arm_tripod_dumbbell_row",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ],
+     "perSide": true
+    },
+    {
+     "exercise": "glute_bridge",
+     "sets": 3,
+     "reps": [
+      10,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "supinated_dumbbell_bicep_curls",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "overhead_dumbbell_triceps_extension",
+     "sets": 2,
+     "reps": [
+      10,
+      15
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "dead_bugs",
+     "sets": 2,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      45,
+      60
+     ],
+     "rir": [
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 5,
+   "title": "Home A",
+   "type": "HYPERTROPHY",
+   "minutes": 45,
+   "exercises": [
+    {
+     "exercise": "goblet_squat",
+     "sets": 3,
+     "reps": [
+      8,
+      15
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "push_up",
+     "sets": 3,
+     "reps": [
+      8,
+      20
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_bent_over_row",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_romanian_deadlift",
+     "sets": 3,
+     "reps": [
+      8,
+      12
+     ],
+     "rest": [
+      120,
+      180
+     ],
+     "rir": [
+      1,
+      2
+     ]
+    },
+    {
+     "exercise": "dumbbell_lateral_raises",
+     "sets": 2,
+     "reps": [
+      12,
+      20
+     ],
+     "rest": [
+      60,
+      90
+     ],
+     "rir": [
+      0,
+      2
+     ]
+    },
+    {
+     "exercise": "plank_or_reverse_crunch",
+     "sets": 3,
+     "reps": [
+      30,
+      60
+     ],
+     "rest": [
+      45,
+      60
+     ],
+     "rir": [
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "weekday": 6,
+   "title": "Easy Cardio",
+   "type": "CARDIO",
+   "minutes": 40,
+   "exercises": [
+    {
+     "exercise": "zone2_cardio",
+     "sets": 1,
+     "reps": [
+      30,
+      45
+     ],
+     "rest": [
+      0,
+      0
+     ],
+     "rir": [
+      0,
+      0
+     ]
+    }
+   ]
+  }
+ ]
+}
