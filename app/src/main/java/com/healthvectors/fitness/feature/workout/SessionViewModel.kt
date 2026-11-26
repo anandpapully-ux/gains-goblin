@@ -148,8 +148,8 @@ class SessionViewModel @Inject constructor(
                     )
                 }
             }
-            val prevText = if (prev.isEmpty()) "No previous session" else "Last: " + prev.joinToString(", ") {
-                if (repsBased) "${Units.fmt(Units.weightToDisplay(it.weightKg, unit))}x${it.reps}" else "${it.reps}"
+            val prevText = if (prev.isEmpty()) "First time doing this one" else "Last time: " + prev.joinToString("  ") {
+                if (repsBased) "${Units.fmt(Units.weightToDisplay(it.weightKg, unit))}×${it.reps}" else "${it.reps}"
             }
             val sugText = when (val s = info?.suggestion) {
                 is Suggestion.IncreaseWeight -> "Overload: go up to ${Units.fmtWeight(s.newWeightKg, unit)}"

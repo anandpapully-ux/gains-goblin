@@ -25,6 +25,10 @@ interface ProfileDao {
     @Query("SELECT * FROM body_weight_entry ORDER BY date DESC LIMIT 1")
     suspend fun latestWeight(): BodyWeightEntity?
 
+    /** The weight logged on [date], else the latest one before it, else the first one after it. */
+    @Query("SELECT * FROM body_weight_entry ORDER BY CASE WHEN date <= :date THEN 0 ELSE 1 END, CASE WHEN date <= :date THEN date END DESC, date LIMIT 1")
+    suspend fun weightNear(date: LocalDate): BodyWeightEntity?
+
     @Query("SELECT * FROM body_weight_entry ORDER BY date DESC LIMIT 1")
     fun observeLatestWeight(): Flow<BodyWeightEntity?>
 
@@ -266,7 +270,10 @@ interface NutritionDao {
     @Insert suspend fun insertFood(f: FoodEntity): Long
     @Update suspend fun updateFood(f: FoodEntity)
     @Query("SELECT * FROM food WHERE id = :id") suspend fun getFood(id: Long): FoodEntity?
+    @Query("SELECT * FROM food WHERE id IN (:ids)") suspend fun foodsByIds(ids: List<Long>): List<FoodEntity>
     @Query("SELECT * FROM food WHERE barcode = :barcode LIMIT 1") suspend fun foodByBarcode(barcode: String): FoodEntity?
+    @Query("SELECT * FROM food WHERE source = :source AND name = :name LIMIT 1")
+    suspend fun foodBySourceAndName(source: String, name: String): FoodEntity?
     @Query("SELECT * FROM food WHERE name LIKE '%' || :q || '%' OR brand LIKE '%' || :q || '%' ORDER BY isFavorite DESC, lastUsedAt DESC LIMIT 40")
     suspend fun searchFoods(q: String): List<FoodEntity>
     @Query("SELECT * FROM food WHERE isFavorite = 1 ORDER BY name") fun observeFavorites(): Flow<List<FoodEntity>>
@@ -293,6 +300,20 @@ interface NutritionDao {
 }
 
 /** Whole-database backup and restore. Deletes run children-first so foreign keys never dangle. */
+@Dao
+interface PhotoDao {
+    @Query("SELECT * FROM progress_photo ORDER BY takenOn DESC, createdAt DESC")
+    fun observeAll(): Flow<List<ProgressPhotoEntity>>
+
+    @Query("SELECT * FROM progress_photo ORDER BY takenOn, createdAt")
+    suspend fun all(): List<ProgressPhotoEntity>
+
+    @Query("SELECT * FROM progress_photo WHERE id = :id") suspend fun get(id: Long): ProgressPhotoEntity?
+    @Insert suspend fun insert(p: ProgressPhotoEntity): Long
+    @Update suspend fun update(p: ProgressPhotoEntity)
+    @Query("DELETE FROM progress_photo WHERE id = :id") suspend fun delete(id: Long)
+}
+
 @Dao
 interface BackupDao {
     @Query("SELECT * FROM user_profile") suspend fun profiles(): List<UserProfileEntity>

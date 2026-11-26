@@ -28,6 +28,7 @@ object AppModule {
     @Provides fun routineDao(db: FitnessDatabase) = db.routineDao()
     @Provides fun workoutDao(db: FitnessDatabase) = db.workoutDao()
     @Provides fun nutritionDao(db: FitnessDatabase) = db.nutritionDao()
+    @Provides fun photoDao(db: FitnessDatabase) = db.photoDao()
 
     /** Injectable so tests can pin "today". */
     @Provides fun clock(): Clock = Clock.systemDefaultZone()

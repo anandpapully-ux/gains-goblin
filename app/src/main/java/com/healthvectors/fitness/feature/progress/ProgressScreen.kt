@@ -19,7 +19,17 @@ import com.healthvectors.fitness.domain.logic.OneRepMax
 import com.healthvectors.fitness.domain.logic.Schedule
 import com.healthvectors.fitness.domain.logic.StreakCalculator
 import com.healthvectors.fitness.domain.model.DayType
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.Alignment
+import java.time.format.DateTimeFormatter
+import com.healthvectors.fitness.data.local.entity.ProgressPhotoEntity
+import com.healthvectors.fitness.data.photos.PhotoRepository
+import com.healthvectors.fitness.domain.logic.PhotoLogic
+import com.healthvectors.fitness.feature.photos.PhotoTile
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.healthvectors.fitness.domain.model.UnitSystem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,13 +53,17 @@ class ProgressViewModel @Inject constructor(
     private val profiles: ProfileRepository,
     private val workouts: WorkoutRepository,
     private val nutrition: NutritionRepository,
-    private val routines: RoutineRepository
+    private val routines: RoutineRepository,
+    photoRepo: PhotoRepository
 ) : ViewModel() {
     private val zone = ZoneId.systemDefault()
     private fun millis(d: LocalDate) = d.atStartOfDay(zone).toInstant().toEpochMilli()
     private val today = LocalDate.now()
     private val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     private fun <T> Flow<T>.state(init: T) = stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), init)
+
+    /** Newest first; null until loaded. */
+    val photos = photoRepo.photos.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val unit = profiles.profile.map { it?.unitSystem ?: UnitSystem.METRIC }.state(UnitSystem.METRIC)
     val weights = profiles.weights.state(emptyList())
@@ -111,7 +125,8 @@ class ProgressViewModel @Inject constructor(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
+fun ProgressScreen(onPhotos: (add: Boolean) -> Unit, onPhoto: (Long) -> Unit, onCompare: () -> Unit, vm: ProgressViewModel = hiltViewModel()) {
+    val photos by vm.photos.collectAsStateWithLifecycle()
     val unit by vm.unit.collectAsStateWithLifecycle()
     val weights by vm.weights.collectAsStateWithLifecycle()
     val measureType by vm.measureType.collectAsStateWithLifecycle()
@@ -130,77 +145,102 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
     var menu by remember { mutableStateOf(false) }
     val label = Units.weightLabel(unit)
 
+    val dm = DateTimeFormatter.ofPattern("d MMM")
     Scaffold(topBar = { TopAppBar(title = { Text("Progress") }) }) { pad ->
-        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("This week", style = MaterialTheme.typography.titleMedium)
-                        Text("${summary.sessions} sessions - ${Units.fmt(Units.weightToDisplay(summary.volumeKg, unit))} $label lifted")
-                        Text("Avg intake ${summary.avgKcal} kcal/day - ${summary.monthSessions} sessions in 30 days - streak $streak")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatTile("${summary.sessions}", "Workouts this week", Modifier.weight(1f), icon = Icons.Outlined.FitnessCenter)
+                        StatTile("$streak", "Session streak", Modifier.weight(1f), icon = Icons.Outlined.LocalFireDepartment, tint = MaterialTheme.colorScheme.tertiary)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatTile("${Units.compact(Units.weightToDisplay(summary.volumeKg, unit))} $label", "Lifted this week", Modifier.weight(1f), icon = Icons.Outlined.BarChart)
+                        StatTile(Units.thousands(summary.avgKcal), "Avg kcal a day", Modifier.weight(1f), icon = Icons.Outlined.Restaurant, tint = MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
+            item { PhotosCard(photos, onPhotos, onPhoto, onCompare) }
             item {
-                ChartCard("Body weight ($label)", onAction = { weightDialog = true }, actionLabel = "Log weight") {
-                    LineChart(weights.map { ChartPoint(it.date.toString().substring(5), Units.weightToDisplay(it.weightKg, unit)) }, description = "Body weight trend")
-                    if (weights.isNotEmpty()) TextButton(onClick = { entries = "weight" }) { Text("Edit entries (${weights.size})") }
+                val latest = weights.lastOrNull()
+                val change = if (weights.size >= 2) Units.weightToDisplay(weights.last().weightKg - weights.first().weightKg, unit) else null
+                ChartCard(
+                    "Body weight",
+                    headline = latest?.let { Units.fmtWeight(it.weightKg, unit) },
+                    detail = change?.let { (if (it > 0) "+" else "") + "${Units.fmt(it)} $label since ${weights.first().date.format(dm)}" },
+                    action = "Log", onAction = { weightDialog = true }
+                ) {
+                    LineChart(weights.map { ChartPoint(it.date.format(dm), Units.weightToDisplay(it.weightKg, unit)) }, description = "Body weight trend",
+                        emptyText = "Log your weight a couple of times to see the trend")
+                    if (weights.isNotEmpty()) TextButton(onClick = { entries = "weight" }, contentPadding = PaddingValues(0.dp)) { Text("Edit entries (${weights.size})") }
                 }
             }
             item {
-                ChartCard("Measurements (cm)", onAction = { measureDialog = true }, actionLabel = "Log") {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ChartCard(
+                    "Measurements", headline = measurements.lastOrNull()?.let { "${Units.fmt(it.valueCm)} cm" },
+                    detail = measurements.lastOrNull()?.let { "$measureType · ${it.date.format(dm)}" },
+                    action = "Log", onAction = { measureDialog = true }
+                ) {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MEASUREMENTS.forEach { m -> FilterChip(measureType == m, { vm.measureType.value = m }, { Text(m) }) }
                     }
-                    LineChart(measurements.map { ChartPoint(it.date.toString().substring(5), it.valueCm) }, description = "$measureType trend")
-                    if (measurements.isNotEmpty()) TextButton(onClick = { entries = "measure" }) { Text("Edit entries (${measurements.size})") }
+                    LineChart(measurements.map { ChartPoint(it.date.format(dm), it.valueCm) }, description = "$measureType trend",
+                        emptyText = "Log your ${measureType.lowercase()} a couple of times to see the trend")
+                    if (measurements.isNotEmpty()) TextButton(onClick = { entries = "measure" }, contentPadding = PaddingValues(0.dp)) { Text("Edit entries (${measurements.size})") }
                 }
             }
             item {
-                ChartCard("Strength: estimated 1RM ($label)") {
-                    if (exercises.isEmpty()) Text("No exercises yet")
+                ChartCard(
+                    "Strength", headline = strength.lastOrNull()?.let { Units.fmtWeight(it.second, unit) },
+                    detail = if (strength.isNotEmpty()) "Estimated one-rep max" else null
+                ) {
+                    if (exercises.isEmpty()) Text("Finish a workout to track your lifts.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
                         var open by remember { mutableStateOf(false) }
                         val current = exercises.firstOrNull { it.id == (selected ?: exercises.first().id) } ?: exercises.first()
                         ExposedDropdownMenuBox(open, { open = it }) {
                             OutlinedTextField(current.name, {}, readOnly = true, label = { Text("Exercise") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
-                                modifier = Modifier.menuAnchor().fillMaxWidth())
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth())
                             ExposedDropdownMenu(open, { open = false }) {
                                 exercises.forEach { e -> DropdownMenuItem(text = { Text(e.name) }, onClick = { vm.selectedExercise.value = e.id; open = false }) }
                             }
                         }
-                        LineChart(strength.map { ChartPoint(it.first.toString().substring(5), Units.weightToDisplay(it.second, unit)) }, description = "Estimated one rep max for ${current.name}")
+                        LineChart(strength.map { ChartPoint(it.first.format(dm), Units.weightToDisplay(it.second, unit)) }, description = "Estimated one rep max for ${current.name}",
+                            emptyText = "Do this exercise in two workouts to see your trend")
                     }
                 }
             }
             item {
-                ChartCard("Weekly volume ($label)") {
-                    BarChart(volume.map { ChartPoint(it.first.toString().substring(5), Units.weightToDisplay(it.second, unit)) }, description = "Training volume by week")
+                ChartCard("Weekly volume", headline = volume.lastOrNull()?.let { "${Units.compact(Units.weightToDisplay(it.second, unit))} $label" }, detail = "This week, weight × reps") {
+                    BarChart(volume.map { ChartPoint(it.first.format(dm), Units.weightToDisplay(it.second, unit)) }, description = "Training volume by week")
                 }
             }
             item {
-                ChartCard("Calories: in vs. out (last 7 days)") {
-                    BarChart(energy.map { ChartPoint(it.first.dayOfWeek.name.take(1), it.second) }, description = "Calories eaten per day")
-                    Text("Estimated workout burn: " + energy.joinToString(", ") { it.third.toInt().toString() } + " kcal", style = MaterialTheme.typography.labelSmall)
+                val burn = energy.sumOf { it.third }.toInt()
+                ChartCard("Calories eaten", headline = energy.lastOrNull()?.let { "${Units.thousands(it.second.toInt())} kcal" }, detail = "Today · last 7 days below") {
+                    BarChart(energy.map { ChartPoint(it.first.dayOfWeek.name.take(3).lowercase().replaceFirstChar(Char::uppercase), it.second) }, description = "Calories eaten per day")
+                    if (burn > 0) Text("Workouts burned about ${Units.thousands(burn)} kcal this week", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item {
-                ChartCard("Muscle heatmap (sets this week)") {
-                    if (heat.isEmpty()) Text("Train to see your weekly muscle coverage")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ChartCard("Muscles trained", detail = "Sets per muscle this week") {
+                    if (heat.isEmpty()) Text("Train to see which muscles you've worked this week.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         val max = (heat.maxOfOrNull { it.sets } ?: 1).coerceAtLeast(1)
                         heat.forEach { h ->
-                            val alpha = if (h.sets == 0) 0f else 0.25f + 0.75f * h.sets / max
+                            val alpha = if (h.sets == 0) 0f else 0.2f + 0.8f * h.sets / max
+                            val strong = alpha > 0.55f
                             Surface(
                                 color = if (h.sets == 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primary.copy(alpha = alpha),
                                 shape = MaterialTheme.shapes.small
                             ) {
-                                Text(
-                                    "${h.muscle}: ${h.sets}" + if (h.sets == 0) " (neglected)" else "",
-                                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium,
-                                    color = if (h.sets == 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
-                                )
+                                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                    val fg = when { h.sets == 0 -> MaterialTheme.colorScheme.onErrorContainer; strong -> MaterialTheme.colorScheme.onPrimary; else -> MaterialTheme.colorScheme.onSurface }
+                                    Text(h.muscle, style = MaterialTheme.typography.labelLarge, color = fg)
+                                    Text(if (h.sets == 0) "Not trained" else "${h.sets} sets", style = MaterialTheme.typography.labelSmall, color = fg)
+                                }
                             }
                         }
                     }
@@ -210,8 +250,8 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
     }
 
     entries?.let { kind ->
-        val rows: List<Triple<Long, String, String>> = if (kind == "weight") weights.reversed().map { Triple(it.id, it.date.toString(), Units.fmtWeight(it.weightKg, unit)) }
-        else measurements.reversed().map { Triple(it.id, it.date.toString(), "${Units.fmt(it.valueCm)} cm") }
+        val rows: List<Triple<Long, String, String>> = if (kind == "weight") weights.reversed().map { Triple(it.id, it.date.format(DateTimeFormatter.ofPattern("EEE d MMM yyyy")), Units.fmtWeight(it.weightKg, unit)) }
+        else measurements.reversed().map { Triple(it.id, it.date.format(DateTimeFormatter.ofPattern("EEE d MMM yyyy")), "${Units.fmt(it.valueCm)} cm") }
         AlertDialog(
             onDismissRequest = { entries = null },
             title = { Text(if (kind == "weight") "Weight entries" else "$measureType entries") },
@@ -219,10 +259,11 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
                 LazyColumn(Modifier.heightIn(max = 400.dp)) {
                     items(rows.size) { i ->
                         val (id, date, value) = rows[i]
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            Text("$date   $value", Modifier.weight(1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(date, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(value, style = MaterialTheme.typography.titleSmall)
                             IconButton(onClick = { if (kind == "weight") vm.deleteWeight(id) else vm.deleteMeasurement(id) }) {
-                                Icon(androidx.compose.material.icons.Icons.Filled.Delete, "Delete entry from $date")
+                                Icon(Icons.Outlined.Delete, "Delete entry from $date", Modifier.size(20.dp))
                             }
                         }
                     }
@@ -232,29 +273,72 @@ fun ProgressScreen(vm: ProgressViewModel = hiltViewModel()) {
         )
     }
     if (weightDialog) ValueDialog("Log weight", label, onDismiss = { weightDialog = false }) { vm.logWeight(Units.weightFromDisplay(it, unit)) }
-    if (measureDialog) ValueDialog("Log $measureType", "cm", onDismiss = { measureDialog = false }) { vm.logMeasurement(it) }
+    if (measureDialog) ValueDialog("Log ${measureType.lowercase()}", "cm", onDismiss = { measureDialog = false }) { vm.logMeasurement(it) }
 }
 
 @Composable
-private fun ChartCard(title: String, onAction: (() -> Unit)? = null, actionLabel: String = "", content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                if (onAction != null) TextButton(onClick = onAction) { Text(actionLabel) }
+private fun PhotosCard(photos: List<ProgressPhotoEntity>?, onPhotos: (Boolean) -> Unit, onPhoto: (Long) -> Unit, onCompare: () -> Unit) {
+    val list = photos ?: return
+    val shots = list.map { PhotoLogic.Shot(it.id, it.takenOn, it.pose, it.weightKg) }
+    val today = LocalDate.now()
+    val since = PhotoLogic.daysSinceLast(shots, today)
+    ChartCard(
+        "Progress photos",
+        headline = if (list.isEmpty()) null else "${list.size} ${if (list.size == 1) "photo" else "photos"}",
+        detail = when (since) { null -> "See the changes the scale can't show"; 0L -> "Last one today"; 1L -> "Last one yesterday"; else -> "Last one $since days ago" },
+        action = "Add", onAction = { onPhotos(true) }
+    ) {
+        if (list.isEmpty()) {
+            Text(
+                "Front, side and back photos every couple of weeks, compared side by side. Encrypted on this phone and never in your gallery.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                list.take(4).forEach { p -> PhotoTile(p, Modifier.weight(1f), showPose = false) { onPhoto(p.id) } }
+                repeat(4 - list.take(4).size) { Spacer(Modifier.weight(1f)) }
             }
-            content()
+            if (PhotoLogic.shouldNudge(shots, today)) Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.tertiaryContainer) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Outlined.PhotoCamera, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                    Text("It's been $since days. Time for a new set?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onPhotos(false) }, Modifier.weight(1f)) { Text("See all") }
+                OutlinedButton(onClick = onCompare, Modifier.weight(1f), enabled = PhotoLogic.defaultPair(shots) != null) {
+                    Icon(Icons.Outlined.Compare, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Compare")
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun ChartCard(
+    title: String, headline: String? = null, detail: String? = null,
+    action: String? = null, onAction: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit
+) {
+    AppCard {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                if (headline != null) Text(headline, style = MaterialTheme.typography.headlineSmall)
+                if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (action != null && onAction != null) FilledTonalButton(onClick = onAction) {
+                Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(action)
+            }
+        }
+        Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }
 
 @Composable
 private fun ValueDialog(title: String, suffix: String, onDismiss: () -> Unit, onSave: (Double) -> Unit) {
     var v by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss, title = { Text(title) },
-        text = { NumField(v, { v = it }, "Value", Modifier.fillMaxWidth(), suffix = suffix) },
-        confirmButton = { TextButton(enabled = (v.toDoubleOrNull() ?: 0.0) > 0, onClick = { onSave(v.toDouble()); onDismiss() }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+    FormSheet(
+        title, onDismiss, primaryLabel = "Save", primaryEnabled = (v.toDoubleOrNull() ?: 0.0) > 0,
+        onPrimary = { onSave(v.toDouble()); onDismiss() }, subtitle = "Logged for today."
+    ) { NumField(v, { v = it }, "Value", Modifier.fillMaxWidth(), suffix = suffix) }
 }

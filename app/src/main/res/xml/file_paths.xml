@@ -2,4 +2,6 @@
 <paths>
     <!-- Plan files written for the share sheet. -->
     <cache-path name="shared" path="shared/" />
+    <!-- A photo the system camera writes for a new progress photo; deleted as soon as it is read. -->
+    <cache-path name="camera" path="camera/" />
 </paths>

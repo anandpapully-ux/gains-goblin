@@ -25,6 +25,9 @@ import com.healthvectors.fitness.feature.plans.PlansScreen
 import com.healthvectors.fitness.feature.nutrition.NutritionScreen
 import com.healthvectors.fitness.feature.onboarding.OnboardingScreen
 import com.healthvectors.fitness.feature.profile.ProfileScreen
+import com.healthvectors.fitness.feature.photos.CompareScreen
+import com.healthvectors.fitness.feature.photos.PhotoViewerScreen
+import com.healthvectors.fitness.feature.photos.PhotosScreen
 import com.healthvectors.fitness.feature.progress.ProgressScreen
 import com.healthvectors.fitness.feature.today.TodayScreen
 import com.healthvectors.fitness.feature.workout.DayEditorScreen
@@ -62,6 +65,12 @@ object Routes {
     const val ADD_FOOD = "addfood/{date}/{meal}"
     const val PLANS = "plans"
     const val HISTORY = "history"
+    const val PHOTOS = "photos?add={add}"
+    const val PHOTO = "photos/view/{id}"
+    const val COMPARE = "photos/compare?anchor={anchor}"
+    fun photos(add: Boolean = false) = "photos?add=$add"
+    fun photo(id: Long) = "photos/view/$id"
+    fun compare(anchor: Long = -1) = "photos/compare?anchor=$anchor"
     fun day(id: Long) = "day/$id"
     fun session(id: Long) = "session/$id"
     fun addFood(date: String, meal: String) = "addfood/$date/$meal"
@@ -131,7 +140,25 @@ fun AppNavHost(startOnboarding: Boolean) {
             composable(Routes.PLANS) { PlansScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.HISTORY) { HistoryScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.NUTRITION) { NutritionScreen(onAddFood = { d, m -> nav.navigate(Routes.addFood(d, m)) }) }
-            composable(Routes.PROGRESS) { ProgressScreen() }
+            composable(Routes.PROGRESS) {
+                ProgressScreen(
+                    onPhotos = { add -> nav.navigate(Routes.photos(add)) },
+                    onPhoto = { nav.navigate(Routes.photo(it)) },
+                    onCompare = { nav.navigate(Routes.compare()) }
+                )
+            }
+            composable(Routes.PHOTOS, listOf(navArgument("add") { type = NavType.BoolType; defaultValue = false })) {
+                PhotosScreen(
+                    startAdding = it.arguments?.getBoolean("add") == true, onBack = { nav.popBackStack() },
+                    onOpen = { id -> nav.navigate(Routes.photo(id)) }, onCompare = { nav.navigate(Routes.compare()) }
+                )
+            }
+            composable(Routes.PHOTO, listOf(navArgument("id") { type = NavType.LongType })) {
+                PhotoViewerScreen(onBack = { nav.popBackStack() }, onCompare = { id -> nav.navigate(Routes.compare(id)) })
+            }
+            composable(Routes.COMPARE, listOf(navArgument("anchor") { type = NavType.LongType; defaultValue = -1L })) {
+                CompareScreen(onBack = { nav.popBackStack() })
+            }
             composable(Routes.PROFILE) { ProfileScreen() }
             composable(Routes.DAY, listOf(navArgument("dayId") { type = NavType.LongType })) {
                 DayEditorScreen(onBack = { nav.popBackStack() }, onStart = { nav.navigate(Routes.session(it)) })

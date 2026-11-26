@@ -19,9 +19,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.ChoiceRow
-import com.healthvectors.fitness.core.designsystem.NumField
-import com.healthvectors.fitness.core.designsystem.SectionTitle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.*
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.datastore.AppSettings
 import com.healthvectors.fitness.data.datastore.SettingsStore
@@ -140,100 +141,142 @@ fun ProfileScreen(vm: ProfileViewModel = hiltViewModel()) {
 
     Scaffold(topBar = { TopAppBar(title = { Text("Profile") }) }, snackbarHost = { SnackbarHost(snack) }) { pad ->
         val p = profile
-        Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp)) {
             if (p != null) {
                 val unit = p.unitSystem
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Current weight: " + (weight?.let { Units.fmtWeight(it.weightKg, unit) } ?: "-"), style = MaterialTheme.typography.titleMedium)
-                        val t = vm.baseTargets()
-                        Text("Daily target: " + (t?.let { "${it.kcal} kcal - P ${it.proteinG} g - C ${it.carbsG} g - F ${it.fatG} g" } ?: "-"))
-                        val age = java.time.Period.between(p.birthDate, java.time.LocalDate.now()).years
-                        val h = if (unit == UnitSystem.METRIC) "${Units.fmt(p.heightCm)} cm" else "${Units.fmt(p.heightCm / Units.CM_PER_IN)} in"
-                        Text("${p.sex.name.lowercase().replaceFirstChar(Char::uppercase)}, $age years, $h", style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { bodyDialog = true }, contentPadding = PaddingValues(0.dp)) { Text("Edit age, height, sex") }
+                val age = java.time.Period.between(p.birthDate, java.time.LocalDate.now()).years
+                val h = if (unit == UnitSystem.METRIC) "${Units.fmt(p.heightCm)} cm" else "${Units.fmt(p.heightCm / Units.CM_PER_IN)} in"
+                AppCard(color = MaterialTheme.colorScheme.primaryContainer) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        IconBadge(Icons.Filled.Person, size = 56.dp, container = MaterialTheme.colorScheme.primary, content = MaterialTheme.colorScheme.onPrimary)
+                        Column(Modifier.weight(1f)) {
+                            Text(weight?.let { Units.fmtWeight(it.weightKg, unit) } ?: "–", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(
+                                "${p.sex.name.lowercase().replaceFirstChar(Char::uppercase)} · $age years · $h",
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        FilledTonalButton(onClick = { bodyDialog = true }) { Text("Edit") }
+                    }
+                    vm.baseTargets()?.let { t ->
+                        Text("Daily target", Modifier.padding(top = 20.dp, bottom = 8.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Row(Modifier.fillMaxWidth()) {
+                            TargetNum(Units.thousands(t.kcal), "kcal", Modifier.weight(1f))
+                            TargetNum("${t.proteinG} g", "Protein", Modifier.weight(1f))
+                            TargetNum("${t.carbsG} g", "Carbs", Modifier.weight(1f))
+                            TargetNum("${t.fatG} g", "Fat", Modifier.weight(1f))
+                        }
                     }
                 }
-                SectionTitle("Goal")
-                ChoiceRow(Goal.entries, p.goal, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { vm.save(p.copy(goal = it)) }
-                if (p.goal == Goal.CUT) {
-                    Text("Weekly loss rate: ${p.weeklyRatePct}% of body weight", style = MaterialTheme.typography.bodyMedium)
-                    Slider(p.weeklyRatePct.toFloat(), { vm.save(p.copy(weeklyRatePct = Math.round(it * 10) / 10.0)) }, valueRange = 0.3f..1.0f)
-                    if (p.weeklyRatePct > 0.8) Text("Above ~0.8% per week risks muscle loss.", color = MaterialTheme.colorScheme.error)
-                }
-                Text("Activity outside workouts")
-                ChoiceRow(ActivityLevel.entries, p.activityLevel, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { vm.save(p.copy(activityLevel = it)) }
-                Text("Units")
-                ChoiceRow(UnitSystem.entries, p.unitSystem, { if (it == UnitSystem.METRIC) "kg" else "lb" }) { vm.save(p.copy(unitSystem = it)) }
 
-                SectionTitle("Nutrition targets")
-                val custom = p.customKcal != null || p.customProteinG != null || p.customFatG != null
-                SwitchRow("Set my own targets", custom) { on ->
-                    if (on) vm.calculatedTargets()?.let { vm.setCustomTargets(it.kcal, it.proteinG, it.fatG) }
-                    else vm.setCustomTargets(null, null, null)
-                }
-                if (custom) {
-                    var kcal by remember(p.customKcal) { mutableStateOf(p.customKcal?.toString() ?: "") }
-                    var prot by remember(p.customProteinG) { mutableStateOf(p.customProteinG?.toString() ?: "") }
-                    var fat by remember(p.customFatG) { mutableStateOf(p.customFatG?.toString() ?: "") }
-                    fun push() = vm.setCustomTargets(
-                        kcal.toIntOrNull()?.takeIf { it in 800..8000 }, prot.toIntOrNull()?.takeIf { it in 0..500 }, fat.toIntOrNull()?.takeIf { it in 0..400 }
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumField(kcal, { kcal = it; push() }, "Calories", Modifier.weight(1f), decimal = false)
-                        NumField(prot, { prot = it; push() }, "Protein", Modifier.weight(1f), decimal = false, suffix = "g")
-                        NumField(fat, { fat = it; push() }, "Fat", Modifier.weight(1f), decimal = false, suffix = "g")
+                SectionTitle("Goal and activity")
+                GroupCard {
+                    GroupField("Goal") { ChoiceRow(Goal.entries, p.goal, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { vm.save(p.copy(goal = it)) } }
+                    if (p.goal == Goal.CUT) {
+                        GroupDivider()
+                        GroupField("Weekly loss", "${p.weeklyRatePct}% of body weight a week") {
+                            Slider(p.weeklyRatePct.toFloat(), { vm.save(p.copy(weeklyRatePct = Math.round(it * 10) / 10.0)) }, valueRange = 0.3f..1.0f)
+                            if (p.weeklyRatePct > 0.8) Text("Losing more than about 0.8% a week risks losing muscle.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
                     }
-                    Text("Carbs fill the remaining calories. Empty fields use the calculated value.", style = MaterialTheme.typography.labelSmall)
+                    GroupDivider()
+                    GroupField("Activity outside workouts") {
+                        ChoiceRow(ActivityLevel.entries, p.activityLevel, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { vm.save(p.copy(activityLevel = it)) }
+                    }
+                    GroupDivider()
+                    GroupField("Units") { ChoiceRow(UnitSystem.entries, p.unitSystem, { if (it == UnitSystem.METRIC) "kg · cm" else "lb · in" }) { vm.save(p.copy(unitSystem = it)) } }
                 }
-                SwitchRow("Eat more on lifting days", s.calorieCycling, vm::setCycling)
-                Text(
-                    "Shifts carbs from rest days to lifting days; the weekly total stays the same. Balanced for the number of lifting days in your plan. Off in rotation mode.",
-                    style = MaterialTheme.typography.labelSmall
+
+                SectionTitle("Nutrition")
+                GroupCard {
+                    val custom = p.customKcal != null || p.customProteinG != null || p.customFatG != null
+                    SwitchSetting("Set my own targets", custom, { on ->
+                        if (on) vm.calculatedTargets()?.let { vm.setCustomTargets(it.kcal, it.proteinG, it.fatG) }
+                        else vm.setCustomTargets(null, null, null)
+                    }, subtitle = if (custom) "Carbs fill the remaining calories. Empty fields use the calculated value." else "Targets are calculated from your body and goal.",
+                        icon = Icons.Outlined.Tune)
+                    if (custom) {
+                        var kcal by remember(p.customKcal) { mutableStateOf(p.customKcal?.toString() ?: "") }
+                        var prot by remember(p.customProteinG) { mutableStateOf(p.customProteinG?.toString() ?: "") }
+                        var fat by remember(p.customFatG) { mutableStateOf(p.customFatG?.toString() ?: "") }
+                        fun push() = vm.setCustomTargets(
+                            kcal.toIntOrNull()?.takeIf { it in 800..8000 }, prot.toIntOrNull()?.takeIf { it in 0..500 }, fat.toIntOrNull()?.takeIf { it in 0..400 }
+                        )
+                        Row(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            NumField(kcal, { kcal = it; push() }, "Calories", Modifier.weight(1f), decimal = false)
+                            NumField(prot, { prot = it; push() }, "Protein", Modifier.weight(1f), decimal = false, suffix = "g")
+                            NumField(fat, { fat = it; push() }, "Fat", Modifier.weight(1f), decimal = false, suffix = "g")
+                        }
+                    }
+                    GroupDivider()
+                    SwitchSetting(
+                        "Eat more on lifting days", s.calorieCycling, vm::setCycling,
+                        subtitle = "Moves carbs from rest days to lifting days; the weekly total stays the same. Off in rotation mode.",
+                        icon = Icons.Outlined.SwapVert
+                    )
+                    GroupDivider()
+                    var water by remember(s.waterGoalMl) { mutableStateOf(s.waterGoalMl.toString()) }
+                    SettingRow("Daily water goal", icon = Icons.Outlined.WaterDrop) {
+                        NumField(water, { water = it; it.toIntOrNull()?.takeIf { v -> v in 500..6000 }?.let(vm::setWater) }, "Goal", Modifier.width(130.dp), decimal = false, suffix = "ml")
+                    }
+                }
+            }
+
+            SectionTitle("Training")
+            GroupCard {
+                GroupField(
+                    "Schedule",
+                    if (s.scheduleMode == ScheduleMode.WEEKLY) "Each plan day belongs to a weekday."
+                    else "Today shows the next day in your plan after the last one you finished. Rest days are skipped."
+                ) { ChoiceRow(ScheduleMode.entries, s.scheduleMode, { if (it == ScheduleMode.WEEKLY) "Fixed weekdays" else "Rotation" }, vm::setSchedule) }
+                GroupDivider()
+                SwitchSetting("Gym mode", s.gymMode, vm::setGym, subtitle = "Keeps the screen on and enlarges text during workouts", icon = Icons.Outlined.ScreenLockPortrait)
+                GroupDivider()
+                SwitchSetting("Rest timer sound", s.restSound, vm::setSound, icon = Icons.Outlined.NotificationsActive)
+                GroupDivider()
+                SwitchSetting("Streaks and XP", s.gamification, vm::setGamification, icon = Icons.Outlined.EmojiEvents)
+                GroupDivider()
+                SwitchSetting("Daily workout reminder", s.reminderEnabled, { on ->
+                    if (!on) vm.setReminder(false, s.reminderHour)
+                    else if (Build.VERSION.SDK_INT >= 33) rationale = true else vm.setReminder(true, s.reminderHour)
+                }, subtitle = if (!s.reminderEnabled) "Off" else "At %02d:00 · ".format(s.reminderHour) +
+                    if (s.scheduleMode == ScheduleMode.WEEKLY) "skipped on rest days and once you've trained" else "skipped once you've trained that day",
+                    icon = Icons.Outlined.Alarm)
+                if (s.reminderEnabled) Slider(
+                    s.reminderHour.toFloat(), { vm.setReminder(true, it.toInt()) }, valueRange = 5f..22f, steps = 16,
+                    modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 8.dp)
                 )
             }
 
             SectionTitle("Appearance")
-            ChoiceRow(ThemeMode.entries, s.themeMode, { it.name.lowercase().replaceFirstChar(Char::uppercase) }, vm::setTheme)
-            SwitchRow("Dynamic color (Android 12+)", s.dynamicColor, vm::setDynamic)
-
-            SectionTitle("Training")
-            Text("Schedule")
-            ChoiceRow(ScheduleMode.entries, s.scheduleMode, { if (it == ScheduleMode.WEEKLY) "Fixed weekdays" else "Rotation" }, vm::setSchedule)
-            Text(
-                if (s.scheduleMode == ScheduleMode.WEEKLY) "Each plan day belongs to a weekday."
-                else "Today shows the next day in your plan after the last one you finished, whenever you train. Rest days are skipped.",
-                style = MaterialTheme.typography.labelSmall
-            )
-            SwitchRow("Gym mode (screen on, larger text)", s.gymMode, vm::setGym)
-            SwitchRow("Rest timer sound", s.restSound, vm::setSound)
-            SwitchRow("Streaks and XP", s.gamification, vm::setGamification)
-
-            SectionTitle("Reminders")
-            SwitchRow("Daily workout reminder (${s.reminderHour}:00)", s.reminderEnabled) { on ->
-                if (!on) vm.setReminder(false, s.reminderHour)
-                else if (Build.VERSION.SDK_INT >= 33) rationale = true else vm.setReminder(true, s.reminderHour)
+            GroupCard {
+                GroupField("Theme") { ChoiceRow(ThemeMode.entries, s.themeMode, { it.name.lowercase().replaceFirstChar(Char::uppercase) }, vm::setTheme) }
+                GroupDivider()
+                SwitchSetting("Match wallpaper colours", s.dynamicColor, vm::setDynamic, subtitle = "Android 12 and newer", icon = Icons.Outlined.Palette)
             }
-            if (s.reminderEnabled) {
-                Slider(s.reminderHour.toFloat(), { vm.setReminder(true, it.toInt()) }, valueRange = 5f..22f, steps = 16)
-                Text(
-                    if (s.scheduleMode == ScheduleMode.WEEKLY) "Skipped on rest days and when you have already trained."
-                    else "Skipped when you have already trained that day.", style = MaterialTheme.typography.labelSmall
-                )
-            }
-            var water by remember(s.waterGoalMl) { mutableStateOf(s.waterGoalMl.toString()) }
-            NumField(water, { water = it; it.toIntOrNull()?.takeIf { v -> v in 500..6000 }?.let(vm::setWater) }, "Daily water goal", Modifier.fillMaxWidth(), decimal = false, suffix = "ml")
 
             SectionTitle("Your data")
-            Text("All data stays on this device in an encrypted database. Nothing is uploaded; the only network calls are optional food searches and barcode lookups (Open Food Facts).", style = MaterialTheme.typography.bodySmall)
-            Text("A JSON backup holds everything (profile, plans, workouts, food). Keep it somewhere safe: it is not encrypted, and it is how you move to a new phone.", style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { exportKind = "json"; create.launch("gains-goblin-backup-${java.time.LocalDate.now()}.json") }) { Text("Back up") }
-                OutlinedButton(onClick = { open.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }) { Text("Restore / import") }
+            GroupCard {
+                SettingRow(
+                    "Back up everything", subtitle = "Profile, plans, workouts and food in one file. It is not encrypted, so keep it somewhere safe. Progress photos are exported separately from their screen.",
+                    icon = Icons.Outlined.Backup, onClick = { exportKind = "json"; create.launch("gains-goblin-backup-${java.time.LocalDate.now()}.json") }
+                )
+                GroupDivider(56.dp)
+                SettingRow(
+                    "Restore or import", subtitle = "From a backup, for example when moving to a new phone",
+                    icon = Icons.Outlined.SettingsBackupRestore, onClick = { open.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }
+                )
+                GroupDivider(56.dp)
+                SettingRow("Export workouts", subtitle = "CSV for spreadsheets", icon = Icons.Outlined.TableChart, onClick = { exportKind = "workouts"; create.launch("workouts.csv") })
+                GroupDivider(56.dp)
+                SettingRow("Export meals", subtitle = "CSV for spreadsheets", icon = Icons.Outlined.TableChart, onClick = { exportKind = "meals"; create.launch("meals.csv") })
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { exportKind = "workouts"; create.launch("workouts.csv") }) { Text("Workouts CSV") }
-                OutlinedButton(onClick = { exportKind = "meals"; create.launch("meals.csv") }) { Text("Meals CSV") }
+            Row(Modifier.padding(top = 16.dp, start = 8.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Outlined.Lock, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Everything stays on this device in an encrypted database. Nothing is uploaded; the only network calls are optional food searches and barcode lookups (Open Food Facts).",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -258,10 +301,10 @@ fun ProfileScreen(vm: ProfileViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f))
-        Switch(checked, onChange)
+private fun TargetNum(value: String, label: String, modifier: Modifier) {
+    Column(modifier) {
+        Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f))
     }
 }
 
@@ -273,22 +316,16 @@ private fun BodyDialog(p: UserProfileEntity, onDismiss: () -> Unit, onSave: (Sex
     var height by remember { mutableStateOf(Units.fmt(if (metric) p.heightCm else p.heightCm / Units.CM_PER_IN)) }
     val a = age.toIntOrNull()
     val h = height.toDoubleOrNull()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("About you") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChoiceRow(Sex.entries, sex, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { sex = it }
-                NumField(age, { age = it }, "Age", Modifier.fillMaxWidth(), decimal = false)
-                NumField(height, { height = it }, "Height", Modifier.fillMaxWidth(), suffix = if (metric) "cm" else "in")
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = a != null && a in 14..90 && h != null && h > 0,
-                onClick = { onSave(sex, a!!, if (metric) h!! else h!! * Units.CM_PER_IN) }
-            ) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+    FormSheet(
+        "About you", onDismiss, primaryLabel = "Save", primaryEnabled = a != null && a in 14..90 && h != null && h > 0,
+        onPrimary = { onSave(sex, a!!, if (metric) h!! else h!! * Units.CM_PER_IN) },
+        subtitle = "Used to calculate your calorie and protein targets."
+    ) {
+        Text("Sex", style = MaterialTheme.typography.labelLarge)
+        ChoiceRow(Sex.entries, sex, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { sex = it }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            NumField(age, { age = it }, "Age", Modifier.weight(1f), decimal = false, suffix = "years")
+            NumField(height, { height = it }, "Height", Modifier.weight(1f), suffix = if (metric) "cm" else "in")
+        }
+    }
 }

@@ -296,16 +296,20 @@ class NutritionRepository @Inject constructor(private val dao: NutritionDao) {
     suspend fun setFavorite(id: Long, fav: Boolean) = dao.setFavorite(id, fav)
     suspend fun deleteMeal(id: Long) = dao.deleteMeal(id)
 
-    /** Saves a food (deduplicated by barcode) and returns its row id. */
+    /** Saves a food (deduplicated by barcode, and food-database rows by name) and returns its row id. */
     suspend fun saveFood(f: FoodEntity): Long {
         f.barcode?.let { code -> dao.foodByBarcode(code)?.let { return it.id } }
+        if (f.source == FoodSource.INDB || f.source == FoodSource.USDA) {
+            dao.foodBySourceAndName(f.source.name, f.name)?.let { return it.id }
+        }
         return dao.insertFood(f)
     }
 
-    suspend fun logMeal(foodId: Long, servings: Double, type: MealType, date: LocalDate) {
-        val f = dao.getFood(foodId) ?: return
+    /** Logs [servings] of a saved food and returns the new meal entry's id (null if the food is gone). */
+    suspend fun logMeal(foodId: Long, servings: Double, type: MealType, date: LocalDate): Long? {
+        val f = dao.getFood(foodId) ?: return null
         val now = System.currentTimeMillis()
-        dao.insertMeal(
+        val entryId = dao.insertMeal(
             MealEntryEntity(
                 date = date, mealType = type, foodId = f.id, foodName = f.name, servings = servings,
                 kcal = f.kcal * servings, protein = f.protein * servings, carbs = f.carbs * servings,
@@ -313,5 +317,8 @@ class NutritionRepository @Inject constructor(private val dao: NutritionDao) {
             )
         )
         dao.updateFood(f.copy(lastUsedAt = now))
+        return entryId
     }
+
+    suspend fun foods(ids: Collection<Long>): List<FoodEntity> = if (ids.isEmpty()) emptyList() else dao.foodsByIds(ids.toList())
 }

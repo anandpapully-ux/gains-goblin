@@ -192,3 +192,21 @@ data class WaterEntryEntity(
     val amountMl: Int,
     val loggedAt: Long
 )
+
+/**
+ * A progress photo. The image itself is not in the database: it is an encrypted file in app-private storage
+ * (see PhotoStore), named by [fileName]. [weightKg] is the body weight logged on or before [takenOn], copied
+ * so the photo keeps it even if that weight entry is later edited.
+ */
+@Entity(tableName = "progress_photo", indices = [Index("takenOn")])
+data class ProgressPhotoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val takenOn: LocalDate,
+    val pose: PhotoPose,
+    val fileName: String,
+    val width: Int,
+    val height: Int,
+    val weightKg: Double? = null,
+    val note: String = "",
+    val createdAt: Long
+)

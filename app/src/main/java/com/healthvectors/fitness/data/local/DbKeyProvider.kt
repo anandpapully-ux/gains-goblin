@@ -23,17 +23,25 @@ import javax.inject.Singleton
 class DbKeyProvider @Inject constructor(@ApplicationContext private val context: Context) {
     private val prefs = context.getSharedPreferences("db_key", Context.MODE_PRIVATE)
 
+    fun passphrase(): ByteArray = secret("wrapped")
+
+    /** A separate 256-bit key for progress photo files, protected the same way. */
+    fun photoKey(): ByteArray = secret("photo_wrapped")
+
     @Synchronized
-    fun passphrase(): ByteArray {
-        val stored = prefs.getString("wrapped", null)
-        return if (stored != null) unwrap(Base64.decode(stored, Base64.NO_WRAP)) else create()
+    private fun secret(pref: String): ByteArray {
+        val stored = prefs.getString(pref, null)
+        return if (stored != null) unwrap(Base64.decode(stored, Base64.NO_WRAP)) else create(pref)
     }
 
-    private fun create(): ByteArray {
+    // commit, not apply: the key must be on disk before anything is encrypted with it, or a crash right after could
+    // leave data that no key opens.
+    @android.annotation.SuppressLint("ApplySharedPref")
+    private fun create(pref: String): ByteArray {
         val raw = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, wrappingKey()) }
         val blob = cipher.iv + cipher.doFinal(raw)
-        prefs.edit().putString("wrapped", Base64.encodeToString(blob, Base64.NO_WRAP)).apply()
+        prefs.edit().putString(pref, Base64.encodeToString(blob, Base64.NO_WRAP)).commit()
         return raw
     }
 

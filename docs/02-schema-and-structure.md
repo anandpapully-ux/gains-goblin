@@ -41,15 +41,25 @@ Several routines can exist; exactly one has `isActive = 1`.
 ### Nutrition
 | Table | Columns |
 |---|---|
-| `food` | id, barcode? (unique), name, brand?, servingSize, servingUnit, kcal, protein, carbs, fat, fiber?, source (CUSTOM/OFF/AI), isFavorite, lastUsedAt? |
+| `food` | id, barcode? (unique), name, brand?, servingSize, servingUnit, kcal, protein, carbs, fat, fiber?, source (CUSTOM/OFF/INDB/USDA), isFavorite, lastUsedAt? |
 | `meal_entry` | id, date, mealType (BREAKFAST/LUNCH/DINNER/SNACK), foodId FK, servings, kcal, protein, carbs, fat (snapshot, so later food edits don't rewrite history), loggedAt |
 | `water_entry` | id, date, amountMl, loggedAt |
 | `nutrition_target` | id, date (unique), kcal, protein, carbs, fat, dayType (TRAINING/REST/CARDIO) |
 
+### Progress photos (database version 3)
+| Table | Columns |
+|---|---|
+| `progress_photo` | id, takenOn (indexed), pose (FRONT/SIDE/BACK), fileName, width, height, weightKg? (body weight on or before takenOn, copied), note, createdAt |
+
+The image is not in the database. `PhotoStore` re-encodes every photo (upright, long edge 1600 px, which drops all
+EXIF metadata including GPS) and writes `files/photos/<fileName>.img` plus a 360 px `<fileName>.thumb`, each
+AES-GCM encrypted (12-byte IV prefix) with a 256-bit key that `DbKeyProvider` wraps with a Keystore key, like the
+database passphrase. Photos are not in the JSON backup; the Photos screen exports a ZIP of plain JPEGs with a
+`photos.json` manifest (`"format": "gains-goblin-photos"`) and imports it back.
+
 ### Later (v2)
 | Table | Columns |
 |---|---|
-| `progress_photo` | id, date, uri (app-private file path), pose (FRONT/SIDE/BACK), note |
 | `soreness_checkin` | id, date, muscle, level 0-3 |
 | `injury_log` | id, muscle/joint, severity, startedAt, resolvedAt?, note |
 | `recovery_score` | date (PK), score, sleepHours?, restingHr?, loadIndex, recommendation |
@@ -93,6 +103,8 @@ myfitnesspal144p/
           local/       FitnessDatabase, dao/, entity/, converters/; plan/PlanAssets (library + templates)
           repository/  *Impl
           datastore/   SettingsStore
+          catalog/     FoodCatalog: bundled offline food database (assets/food_db.json)
+          photos/      PhotoStore (encrypted image files), PhotoRepository (rows, ZIP export/import, share image)
           remote/      OpenFoodFacts (v2)
           health/      HealthConnect (v2)
         feature/
@@ -115,5 +127,5 @@ Next: Step 4, source code one milestone at a time, starting with M1 (Gradle setu
 - `exercise.alternatives` is a pipe-separated text column; there is no `exercise_alternative` table.
 - `exercise.repUnit` ("reps"/"seconds"/"minutes") replaces `isTimed`; `workout_set.reps` holds reps, seconds or minutes accordingly.
 - No `nutrition_target` table: targets are computed from the profile, latest weight and day type (`DailyTargets`).
-- Tables not built: `personal_record` (PRs are flagged on `workout_set.isPr`), progress photos, soreness, injury, recovery, achievements.
+- Tables not built: `personal_record` (PRs are flagged on `workout_set.isPr`), soreness, injury, recovery, achievements.
 - Repositories return Room entities directly instead of separate domain models; business rules live in `domain/logic`.

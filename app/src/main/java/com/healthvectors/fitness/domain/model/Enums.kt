@@ -28,9 +28,13 @@ enum class MealType { BREAKFAST, LUNCH, DINNER, SNACK }
 
 enum class SessionStatus { ACTIVE, DONE, DISCARDED }
 
-enum class FoodSource { CUSTOM, OFF }
+/** OFF: Open Food Facts. INDB and USDA: rows from the bundled food database (assets/food_db.json). */
+enum class FoodSource { CUSTOM, OFF, INDB, USDA }
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /** WEEKLY: each plan day belongs to a weekday. ROTATION: train the next day in order whenever you go. */
 enum class ScheduleMode { WEEKLY, ROTATION }
+
+/** The angle of a progress photo; comparisons only pair photos of the same pose. */
+enum class PhotoPose(val label: String) { FRONT("Front"), SIDE("Side"), BACK("Back") }

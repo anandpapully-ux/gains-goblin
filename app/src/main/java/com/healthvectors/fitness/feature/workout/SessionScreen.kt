@@ -25,7 +25,18 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.healthvectors.fitness.core.designsystem.NumField
+import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import kotlinx.coroutines.delay
 
@@ -71,7 +82,18 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Column { Text(ui.title, maxLines = 1); Text(elapsed, style = MaterialTheme.typography.labelMedium) } },
+                    title = {
+                        Column {
+                            Text(ui.title, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Timer, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(4.dp))
+                                val done = ui.blocks.sumOf { b -> b.rows.count { it.done } }
+                                val total = ui.blocks.sumOf { it.rows.size }
+                                Text("$elapsed · $done of $total sets", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    },
                     navigationIcon = { IconButton(onClick = onExit) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Leave workout (progress is kept)") } },
                     actions = {
                         IconButton(onClick = {
@@ -84,12 +106,12 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
                             } catch (_: ActivityNotFoundException) {
                                 android.widget.Toast.makeText(ctx, "Voice input is not available on this device", android.widget.Toast.LENGTH_SHORT).show()
                             }
-                        }) { Icon(Icons.Filled.Mic, "Log a set by voice") }
-                        IconButton(onClick = { plate = true }) { Icon(Icons.Filled.Calculate, "Plate calculator") }
+                        }) { Icon(Icons.Outlined.Mic, "Log a set by voice") }
+                        IconButton(onClick = { plate = true }) { Icon(Icons.Outlined.Calculate, "Plate calculator") }
                         Box {
                             IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
                             DropdownMenu(menu, { menu = false }) {
-                                DropdownMenuItem(text = { Text("Discard workout") }, onClick = { menu = false; confirmDiscard = true })
+                                DropdownMenuItem(text = { Text("Discard workout") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { menu = false; confirmDiscard = true })
                             }
                         }
                     }
@@ -97,12 +119,12 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
             },
             snackbarHost = { SnackbarHost(snack) },
             bottomBar = {
-                Surface(tonalElevation = 3.dp) {
-                    Column(Modifier.navigationBarsPadding()) {
+                Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+                    Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         rest?.let { RestBar(it, onAdd = { vm.addRest(15) }, onSkip = vm::skipRest) }
                         Button(
                             onClick = { confirmFinish = true },
-                            modifier = Modifier.fillMaxWidth().padding(12.dp).height(if (settings.gymMode) 64.dp else 52.dp)
+                            modifier = Modifier.fillMaxWidth().height(if (settings.gymMode) 64.dp else 52.dp)
                         ) { Icon(Icons.Filled.Check, null); Spacer(Modifier.width(8.dp)); Text("Finish workout") }
                     }
                 }
@@ -111,20 +133,20 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
             Box(Modifier.padding(pad)) {
                 if (ui.loading) {
                     CircularProgressIndicator(Modifier.align(Alignment.Center))
-                } else LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                } else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(ui.blocks, key = { it.item.item.id }) { block ->
                         ExerciseCard(block, ui.weightUnit, vm, onWarmup = { warmupFor = block })
                     }
                 }
                 AnimatedVisibility(celebrate != null, Modifier.align(Alignment.TopCenter)) {
-                    Card(
-                        Modifier.padding(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                    Surface(
+                        Modifier.padding(16.dp), shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.tertiaryContainer, shadowElevation = 6.dp
                     ) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.EmojiEvents, null)
+                            IconBadge(Icons.Filled.EmojiEvents, container = MaterialTheme.colorScheme.tertiary, content = MaterialTheme.colorScheme.onTertiary)
                             Spacer(Modifier.width(12.dp))
-                            Text(celebrate.orEmpty(), style = MaterialTheme.typography.titleMedium)
+                            Text(celebrate.orEmpty(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
                         }
                     }
                 }
@@ -140,7 +162,7 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
     if (confirmFinish) AlertDialog(
         onDismissRequest = { confirmFinish = false },
         title = { Text("Finish workout?") },
-        text = { Text("Logged sets are saved. Unlogged rows are ignored.") },
+        text = { Text("Logged sets are saved. Rows you didn't tick are ignored.") },
         confirmButton = { TextButton(onClick = { confirmFinish = false; vm.finish() }) { Text("Finish") } },
         dismissButton = { TextButton(onClick = { confirmFinish = false }) { Text("Keep going") } }
     )
@@ -154,16 +176,24 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
     finished?.let { f ->
         AlertDialog(
             onDismissRequest = onExit,
+            icon = { Icon(if (f.summary == null) Icons.Outlined.Info else Icons.Filled.EmojiEvents, null) },
             title = { Text(if (f.summary == null) "Nothing logged" else "Workout complete") },
             text = {
                 val s = f.summary
                 if (s == null) Text("No sets were logged, so this session was not saved.")
-                else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Duration: ${s.durationMin} min")
-                    Text("Sets: ${s.sets}")
-                    Text("Volume: ${Units.fmt(Units.weightToDisplay(s.volumeKg, unitOf(ui.weightUnit)))} ${ui.weightUnit}")
-                    Text("Estimated burn: ${s.kcal.toInt()} kcal")
-                    if (s.prCount > 0) Text("Personal records: ${s.prCount}", style = MaterialTheme.typography.titleMedium)
+                else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatTile("${s.durationMin} min", "Duration", Modifier.weight(1f))
+                        StatTile("${s.sets}", "Sets", Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatTile("${Units.compact(Units.weightToDisplay(s.volumeKg, unitOf(ui.weightUnit)))} ${ui.weightUnit}", "Volume", Modifier.weight(1f))
+                        StatTile("${s.kcal.toInt()}", "kcal burned", Modifier.weight(1f))
+                    }
+                    if (s.prCount > 0) Text(
+                        "${s.prCount} personal ${if (s.prCount == 1) "record" else "records"}!", Modifier.fillMaxWidth().padding(top = 4.dp),
+                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.tertiary, textAlign = TextAlign.Center
+                    )
                 }
             },
             confirmButton = { TextButton(onClick = onExit) { Text("Done") } }
@@ -173,44 +203,88 @@ fun SessionScreen(onExit: () -> Unit, vm: SessionViewModel = hiltViewModel()) {
 
 @Composable
 private fun RestBar(rest: RestState, onAdd: () -> Unit, onSkip: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)
-            .semantics { contentDescription = "Rest timer, ${rest.remaining} seconds remaining" },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(Icons.Filled.Timer, null)
-        Column(Modifier.weight(1f)) {
-            Text("Rest  %d:%02d".format(rest.remaining / 60, rest.remaining % 60), style = MaterialTheme.typography.titleMedium)
-            LinearProgressIndicator(progress = { 1f - rest.remaining.toFloat() / rest.total }, Modifier.fillMaxWidth())
+    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
+        Column(
+            Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { contentDescription = "Rest timer, ${rest.remaining} seconds remaining" },
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Outlined.Timer, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("Rest", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(
+                    "%d:%02d".format(rest.remaining / 60, rest.remaining % 60), Modifier.weight(1f),
+                    style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                FilledTonalButton(onClick = onAdd, contentPadding = PaddingValues(horizontal = 14.dp)) { Text("+15 s") }
+                TextButton(onClick = onSkip) { Text("Skip") }
+            }
+            LinearProgressIndicator(
+                progress = { 1f - rest.remaining.toFloat() / rest.total }, Modifier.fillMaxWidth().height(6.dp),
+                strokeCap = StrokeCap.Round, gapSize = 0.dp, drawStopIndicator = {}
+            )
         }
-        FilledTonalButton(onClick = onAdd) { Text("+15s") }
-        TextButton(onClick = onSkip) { Text("Skip") }
     }
 }
 
 @Composable
 private fun ExerciseCard(block: BlockUi, unitLabel: String, vm: SessionViewModel, onWarmup: () -> Unit) {
     val r = block.item
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(r.exercise.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                "${r.item.targetSets} x ${r.item.repMin}-${r.item.repMax} ${block.unitLabel}" + (if (r.item.perSide) " per side" else "") +
-                    " - RIR ${r.item.rirMin}-${r.item.rirMax} - rest ${r.item.restMinSec}-${r.item.restMaxSec}s",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(block.previousText + if (block.bestText.isNotEmpty()) "  |  ${block.bestText}" else "", style = MaterialTheme.typography.labelMedium)
-            if (block.suggestion.isNotEmpty()) {
-                Text(block.suggestion, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    var menu by remember { mutableStateOf(false) }
+    val allDone = block.rows.isNotEmpty() && block.rows.all { it.done }
+    AppCard(padding = 16.dp) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(r.exercise.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f, fill = false))
+                    if (allDone) Icon(Icons.Filled.CheckCircle, "All sets done", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+                Text(
+                    "${r.item.targetSets} × ${r.item.repMin}–${r.item.repMax} ${block.unitLabel}" + (if (r.item.perSide) " per side" else "") +
+                        (if (block.showWeight) " · RIR ${r.item.rirMin}–${r.item.rirMax}" else "") +
+                        if (r.item.restMaxSec > 0) " · " + Units.restRange(r.item.restMinSec, r.item.restMaxSec).lowercase() else "",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            block.rows.forEach { row -> SetRow(block, row, unitLabel, vm) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { vm.addSet(r) }) { Icon(Icons.Filled.Add, null); Text("Add set") }
-                if (block.showWeight) TextButton(onClick = onWarmup) { Text("Warm-up") }
+            Box {
+                IconButton(onClick = { menu = true }, Modifier.size(36.dp)) { Icon(Icons.Filled.MoreVert, "Options for ${r.exercise.name}") }
+                DropdownMenu(menu, { menu = false }) {
+                    DropdownMenuItem(text = { Text("Add set") }, leadingIcon = { Icon(Icons.Filled.Add, null) }, onClick = { menu = false; vm.addSet(r) })
+                    if (block.showWeight) DropdownMenuItem(text = { Text("Warm-up sets") }, leadingIcon = { Icon(Icons.Outlined.Whatshot, null) }, onClick = { menu = false; onWarmup() })
+                }
             }
         }
+        if (r.item.notes.isNotBlank()) Text(r.item.notes, Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        Surface(Modifier.fillMaxWidth().padding(top = 12.dp), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    block.previousText + if (block.bestText.isNotEmpty()) "  ·  ${block.bestText}" else "",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (block.suggestion.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.AutoMirrored.Filled.TrendingUp, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(6.dp))
+                    Text(block.suggestion, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        // Column headings once, instead of a label in every field.
+        Row(Modifier.padding(top = 12.dp, bottom = 4.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Header("Set", Modifier.width(32.dp))
+            if (block.showWeight) Header(unitLabel, Modifier.weight(1f))
+            Header(block.unitLabel, Modifier.weight(1f))
+            if (block.showWeight) Header("RPE", Modifier.weight(0.8f))
+            Spacer(Modifier.width(44.dp))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { block.rows.forEach { row -> SetRow(block, row, unitLabel, vm) } }
+        TextButton(onClick = { vm.addSet(r) }, Modifier.padding(top = 4.dp)) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Add set") }
     }
 }
+
+@Composable
+private fun Header(text: String, modifier: Modifier) =
+    Text(text.uppercase(), modifier, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,39 +293,67 @@ private fun SetRow(block: BlockUi, row: SetRowUi, unitLabel: String, vm: Session
         if (v == SwipeToDismissBoxValue.StartToEnd && !row.done) vm.toggle(block, row)
         false // always snap back; completion is shown by the row state
     })
+    val n = row.index + 1
     SwipeToDismissBox(
         state = state,
         enableDismissFromEndToStart = false,
         enableDismissFromStartToEnd = !row.done,
         backgroundContent = {
-            Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
-                Icon(Icons.Filled.Check, "Swipe to complete set", tint = MaterialTheme.colorScheme.primary)
+            Box(Modifier.fillMaxSize().clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
+                Icon(Icons.Filled.Check, "Swipe to complete set", tint = MaterialTheme.colorScheme.onPrimaryContainer)
             }
         }
     ) {
         Surface(
-            color = if (row.done) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.medium
+            color = if (row.done) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = MaterialTheme.shapes.small
         ) {
-            Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${row.index + 1}", Modifier.width(20.dp), style = MaterialTheme.typography.titleSmall)
-                if (block.showWeight) {
-                    NumField(row.weight, { vm.edit(block.item, row, weight = it) }, unitLabel, Modifier.weight(1f))
-                }
-                NumField(row.reps, { vm.edit(block.item, row, reps = it) }, block.unitLabel, Modifier.weight(1f), decimal = false)
-                if (block.showWeight) {
-                    NumField(row.rpe, { vm.edit(block.item, row, rpe = it) }, "RPE", Modifier.weight(0.8f))
-                }
-                IconButton(onClick = { vm.toggle(block, row) }, Modifier.size(48.dp)) {
+            Row(Modifier.padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("$n", Modifier.width(32.dp), style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center,
+                    color = if (row.isPr) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface)
+                if (block.showWeight) CellField(row.weight, { vm.edit(block.item, row, weight = it) }, true, "Set $n weight in $unitLabel", row.done, Modifier.weight(1f))
+                CellField(row.reps, { vm.edit(block.item, row, reps = it) }, false, "Set $n ${block.unitLabel}", row.done, Modifier.weight(1f))
+                if (block.showWeight) CellField(row.rpe, { vm.edit(block.item, row, rpe = it) }, true, "Set $n RPE", row.done, Modifier.weight(0.8f), placeholder = "–")
+                IconButton(onClick = { vm.toggle(block, row) }, Modifier.size(44.dp)) {
                     Icon(
-                        if (row.done) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                        if (row.done) "Set ${row.index + 1} done, tap to undo" else "Complete set ${row.index + 1}",
-                        tint = if (row.isPr) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                        if (row.done) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                        if (row.done) "Set $n done, tap to undo" else "Complete set $n",
+                        tint = when {
+                            row.isPr -> MaterialTheme.colorScheme.tertiary
+                            row.done -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.outline
+                        },
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
         }
     }
+}
+
+/** A compact numeric cell for the set table: no floating label (the column has a heading), big centred digits. */
+@Composable
+private fun CellField(value: String, onChange: (String) -> Unit, decimal: Boolean, description: String, done: Boolean, modifier: Modifier, placeholder: String = "") {
+    val color = MaterialTheme.colorScheme.onSurface
+    BasicTextField(
+        value = value,
+        onValueChange = { v -> if (numOk(v, decimal)) onChange(v.replace(',', '.')) },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.titleMedium.copy(color = color, textAlign = TextAlign.Center),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
+        modifier = modifier.semantics { contentDescription = description },
+        decorationBox = { inner ->
+            Box(
+                Modifier.fillMaxWidth().height(44.dp).clip(MaterialTheme.shapes.small)
+                    .background(if (done) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center
+            ) {
+                if (value.isEmpty() && placeholder.isNotEmpty()) Text(placeholder, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.outline)
+                inner()
+            }
+        }
+    )
 }
 
 private fun unitOf(label: String) =

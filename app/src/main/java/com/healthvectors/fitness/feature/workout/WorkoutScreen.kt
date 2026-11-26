@@ -14,8 +14,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.EmptyState
-import com.healthvectors.fitness.core.designsystem.NumField
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Whatshot
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.datastore.AppSettings
 import com.healthvectors.fitness.data.datastore.SettingsStore
@@ -68,55 +76,38 @@ fun WorkoutScreen(
 
     Scaffold(topBar = {
         TopAppBar(
-            title = { Column { Text(plan?.name ?: "Workout", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis); Text(if (rotation) "Rotation: next day in order" else "Weekly plan", style = MaterialTheme.typography.labelMedium) } },
+            title = {
+                Column {
+                    Text(plan?.name ?: "Workout", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (days.isNotEmpty()) Text(
+                        "${trainingOrder.size} training days · " + if (rotation) "rotation" else "fixed weekdays",
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             actions = {
                 IconButton(onClick = onOpenHistory) { Icon(Icons.Filled.History, "Workout history") }
-                IconButton(onClick = onOpenPlans) { Icon(Icons.Filled.ListAlt, "My plans") }
+                IconButton(onClick = onOpenPlans) { Icon(Icons.AutoMirrored.Filled.ListAlt, "My plans") }
             }
         )
     }) { pad ->
         if (days.isEmpty()) {
-            Column(Modifier.padding(pad).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyState(Icons.Filled.FitnessCenter, "No plan yet", "Pick a starter plan, import one from a friend, or build your own.")
-                Button(onClick = onOpenPlans) { Text("Choose a plan") }
-            }
+            EmptyState(
+                Icons.Filled.FitnessCenter, "No plan yet", "Pick a starter plan, import one from a friend, or build your own.",
+                Modifier.padding(pad)
+            ) { Button(onClick = onOpenPlans) { Text("Choose a plan") } }
         } else {
-            LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(days, key = { it.id }) { d ->
+            LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
+                item { SectionTitle(if (rotation) "Rotation order" else "Your week", Modifier.padding(top = 0.dp)) }
+                itemsIndexed(days, key = { _, d -> d.id }) { i, d ->
                     val highlight = if (rotation) d.id == nextId else d.dayOfWeek == todayDow
-                    val rest = d.type == DayType.REST
-                    val label = when {
-                        rotation && rest -> "Rest (skipped in rotation)"
-                        rotation -> "Day ${trainingOrder.indexOf(d.id) + 1}" + if (highlight) " - next up" else ""
-                        else -> DayOfWeek.of(d.dayOfWeek).name.lowercase().replaceFirstChar(Char::uppercase) + if (highlight) " - today" else ""
-                    }
-                    ElevatedCard(
-                        onClick = { onOpenDay(d.id) },
-                        colors = if (highlight) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                        else CardDefaults.elevatedCardColors()
-                    ) {
-                        ListItem(
-                            headlineContent = { Text(d.title) },
-                            overlineContent = { Text(label) },
-                            supportingContent = {
-                                Text(
-                                    when (d.type) {
-                                        DayType.REST -> "Rest - tap to edit"
-                                        DayType.CARDIO -> "Cardio" + if (d.estimatedMinutes > 0) " - ~${d.estimatedMinutes} min" else ""
-                                        DayType.HYPERTROPHY -> "Strength" + if (d.estimatedMinutes > 0) " - ~${d.estimatedMinutes} min" else ""
-                                    }
-                                )
-                            },
-                            trailingContent = { Icon(Icons.Filled.ChevronRight, "Open ${d.title}") },
-                            colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-                        )
-                    }
+                    GroupItem(i, days.size, dividerInset = 76.dp) { DayRow(d, rotation, highlight, trainingOrder.indexOf(d.id) + 1) { onOpenDay(d.id) } }
                 }
+                item { SectionTitle("Tools") }
                 item {
-                    Text("Tools", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                        OutlinedButton(onClick = { tool = "plate" }) { Text("Plate calculator") }
-                        OutlinedButton(onClick = { tool = "warmup" }) { Text("Warm-up sets") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ActionTile(Icons.Outlined.Calculate, "Plate calculator", "What to load on each side", Modifier.weight(1f)) { tool = "plate" }
+                        ActionTile(Icons.Outlined.Whatshot, "Warm-up sets", "Ramp up to your working weight", Modifier.weight(1f)) { tool = "warmup" }
                     }
                 }
             }
@@ -124,6 +115,43 @@ fun WorkoutScreen(
     }
     if (tool == "plate") PlateDialog(null) { tool = null }
     if (tool == "warmup") WarmupDialog(null) { tool = null }
+}
+
+@Composable
+private fun DayRow(d: RoutineDayEntity, rotation: Boolean, highlight: Boolean, position: Int, onClick: () -> Unit) {
+    val rest = d.type == DayType.REST
+    val (container, content) = when {
+        highlight -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+        rest -> MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurfaceVariant
+        d.type == DayType.CARDIO -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+    }
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(container), contentAlignment = Alignment.Center) {
+            Text(
+                if (rotation) (if (rest) "–" else "$position") else DayOfWeek.of(d.dayOfWeek).name.take(3).lowercase().replaceFirstChar(Char::uppercase),
+                style = MaterialTheme.typography.labelLarge, color = content
+            )
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(d.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (highlight) Pill(if (rotation) "Next" else "Today")
+            }
+            Text(
+                when (d.type) {
+                    DayType.REST -> if (rotation) "Rest · skipped in rotation" else "Rest day"
+                    DayType.CARDIO -> "Cardio" + if (d.estimatedMinutes > 0) " · about ${d.estimatedMinutes} min" else ""
+                    DayType.HYPERTROPHY -> "Strength" + if (d.estimatedMinutes > 0) " · about ${d.estimatedMinutes} min" else ""
+                },
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(Icons.Filled.ChevronRight, "Open ${d.title}", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 /** Shared state for the calculators: the user's unit system and bar weight. */
@@ -136,6 +164,7 @@ class GymToolsViewModel @Inject constructor(profiles: ProfileRepository, private
 }
 
 /** [initialKg] is the target in kg; everything on screen is in the user's units. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlateDialog(initialKg: Double?, vm: GymToolsViewModel = hiltViewModel(), onDismiss: () -> Unit) {
     val unit by vm.unit.collectAsStateWithLifecycle()
@@ -145,28 +174,26 @@ fun PlateDialog(initialKg: Double?, vm: GymToolsViewModel = hiltViewModel(), onD
     var bar by remember(unit, barKg) { mutableStateOf(Units.fmt(barKg?.let { Units.weightToDisplay(it, unit) } ?: Units.defaultBar(unit))) }
     val t = target.toDoubleOrNull()
     val b = bar.toDoubleOrNull() ?: Units.defaultBar(unit)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-        title = { Text("Plate calculator ($label)") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                NumField(target, { target = it }, "Target total", Modifier.fillMaxWidth(), suffix = label)
-                NumField(bar, { v ->
-                    bar = v
-                    v.toDoubleOrNull()?.takeIf { it > 0 }?.let { vm.saveBar(Units.weightFromDisplay(it, unit)) }
-                }, "Bar weight (saved)", Modifier.fillMaxWidth(), suffix = label)
-                if (t != null && t >= b) {
-                    val r = PlateCalculator.platesPerSide(t, b, Units.defaultPlates(unit))
-                    Text(
-                        if (r.platesPerSide.isEmpty()) "Just the bar." else "Per side: " + r.platesPerSide.joinToString(" + ") { Units.fmt(it) },
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (r.remainderKg > 0) Text("Closest loadable is ${Units.fmt(t - r.remainderKg)} $label")
-                } else Text("Enter a target at or above the bar weight.")
-            }
+    FormSheet("Plate calculator", onDismiss, primaryLabel = "Done", onPrimary = onDismiss, subtitle = "What to put on each side of the bar.") {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumField(target, { target = it }, "Total weight", Modifier.weight(1f), suffix = label)
+            NumField(bar, { v ->
+                bar = v
+                v.toDoubleOrNull()?.takeIf { it > 0 }?.let { vm.saveBar(Units.weightFromDisplay(it, unit)) }
+            }, "Bar (saved)", Modifier.weight(1f), suffix = label)
         }
-    )
+        ResultCard {
+            if (t != null && t >= b) {
+                val r = PlateCalculator.platesPerSide(t, b, Units.defaultPlates(unit))
+                Text("Each side", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (r.platesPerSide.isEmpty()) Text("Just the bar", style = MaterialTheme.typography.titleLarge)
+                else FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    r.platesPerSide.forEach { Pill("${Units.fmt(it)} $label", container = MaterialTheme.colorScheme.primary) }
+                }
+                if (r.remainderKg > 0) Text("Closest you can load: ${Units.fmt(t - r.remainderKg)} $label", style = MaterialTheme.typography.bodySmall)
+            } else Text("Enter a total at or above the bar weight.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 /** [initialKg] is the working weight in kg; the warm-up is shown in the user's units. */
@@ -177,17 +204,25 @@ fun WarmupDialog(initialKg: Double?, vm: GymToolsViewModel = hiltViewModel(), on
     var w by remember(unit) { mutableStateOf(initialKg?.let { Units.fmt(Units.weightToDisplay(it, unit)) } ?: "") }
     val value = w.toDoubleOrNull()
     val step = if (unit == UnitSystem.METRIC) 2.0 else 5.0
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-        title = { Text("Warm-up sets ($label)") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                NumField(w, { w = it }, "Working weight", Modifier.fillMaxWidth(), suffix = label)
-                val sets = if (value != null) WarmupGenerator.generate(value, step) else emptyList()
-                if (sets.isEmpty()) Text("No warm-up needed for very light loads.")
-                sets.forEach { Text("${Units.fmt(it.weightKg)} $label x ${it.reps}") }
+    FormSheet("Warm-up sets", onDismiss, primaryLabel = "Done", onPrimary = onDismiss, subtitle = "Lighter sets that ramp up to your first working set.") {
+        NumField(w, { w = it }, "Working weight", Modifier.fillMaxWidth(), suffix = label)
+        val sets = if (value != null) WarmupGenerator.generate(value, step) else emptyList()
+        ResultCard {
+            if (value == null) Text("Enter your working weight.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else if (sets.isEmpty()) Text("No warm-up needed for very light loads.", style = MaterialTheme.typography.bodyMedium)
+            sets.forEachIndexed { i, s ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Set ${i + 1}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${Units.fmt(s.weightKg)} $label × ${s.reps}", style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun ResultCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+    }
 }

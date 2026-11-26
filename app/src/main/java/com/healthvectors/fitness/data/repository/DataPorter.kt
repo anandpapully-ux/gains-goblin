@@ -219,7 +219,9 @@ class DataPorter @Inject constructor(private val db: FitnessDatabase) {
             it.getLong("id"), it.optStringOrNull("barcode"), it.getString("name"), it.optStringOrNull("brand"),
             it.getDouble("servingSize"), it.getString("servingUnit"), it.getDouble("kcal"),
             it.getDouble("protein"), it.getDouble("carbs"), it.getDouble("fat"),
-            FoodSource.valueOf(it.getString("source")), it.optBoolean("isFavorite"), it.longOrNull("lastUsedAt")
+            // A newer app may add sources; such a food is still a valid saved food, so restore it as custom.
+            FoodSource.entries.firstOrNull { s -> s.name == it.optString("source") } ?: FoodSource.CUSTOM,
+            it.optBoolean("isFavorite"), it.longOrNull("lastUsedAt")
         )
     }
 

@@ -14,8 +14,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.CalorieRing
-import com.healthvectors.fitness.core.designsystem.MacroBar
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.ui.graphics.StrokeCap
+import com.healthvectors.fitness.core.designsystem.*
+import com.healthvectors.fitness.core.util.Units
+import java.time.format.DateTimeFormatter
 import com.healthvectors.fitness.data.datastore.SettingsStore
 import com.healthvectors.fitness.data.local.dao.RoutineExerciseWithExercise
 import com.healthvectors.fitness.data.local.entity.RoutineDayEntity
@@ -129,64 +132,144 @@ fun TodayScreen(
     vm: TodayViewModel = hiltViewModel()
 ) {
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val today = LocalDate.now()
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp).padding(top = 24.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            LocalDate.now().dayOfWeek.name.lowercase().replaceFirstChar(Char::uppercase),
-            style = MaterialTheme.typography.headlineLarge
-        )
-        if (ui.gamification && ui.streak > 0) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = {}, label = { Text("${ui.streak}-session streak") },
-                    leadingIcon = { Icon(Icons.Filled.LocalFireDepartment, null) })
-                AssistChip(onClick = {}, label = { Text("Level ${ui.xp / 500 + 1} - ${ui.xp} XP") },
-                    leadingIcon = { Icon(Icons.Filled.EmojiEvents, null) })
+        Column(Modifier.padding(horizontal = 4.dp)) {
+            Text(today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(greeting(), style = MaterialTheme.typography.headlineLarge)
+        }
+        if (ui.gamification && (ui.streak > 0 || ui.xp > 0)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+                if (ui.streak > 0) StatPill(Icons.Filled.LocalFireDepartment, "${ui.streak}-session streak", MaterialTheme.colorScheme.tertiary)
+                StatPill(Icons.Filled.EmojiEvents, "Level ${ui.xp / 500 + 1} · ${Units.thousands(ui.xp)} XP", MaterialTheme.colorScheme.primary)
             }
         }
         if (ui.deload) {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-                Text(
-                    "Coach: your recent sessions have been at very high effort (RPE 9+). " +
-                        "Consider a deload week: same exercises, ~60% of your usual weight, fewer sets.",
-                    Modifier.padding(16.dp)
-                )
+            AppCard(color = MaterialTheme.colorScheme.tertiaryContainer) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    IconBadge(Icons.Filled.TipsAndUpdates, container = MaterialTheme.colorScheme.tertiary, content = MaterialTheme.colorScheme.onTertiary)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Time for a deload?", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        Text(
+                            "Your recent sessions have been at very high effort (RPE 9+). Try a lighter week: same exercises, " +
+                                "about 60% of your usual weight, fewer sets.",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
             }
         }
         WorkoutCard(ui, vm, onOpenSession)
 
-        Card(onClick = onOpenNutrition, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Nutrition", style = MaterialTheme.typography.titleMedium)
-                val t = ui.targets
-                if (t == null) {
-                    Text("Complete your profile to see targets.")
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CalorieRing(ui.eaten.kcal.toDouble(), t.kcal.toDouble())
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MacroBar("Protein", ui.eaten.proteinG.toDouble(), t.proteinG.toDouble())
-                            MacroBar("Carbs", ui.eaten.carbsG.toDouble(), t.carbsG.toDouble())
-                            MacroBar("Fat", ui.eaten.fatG.toDouble(), t.fatG.toDouble())
-                        }
+        SectionTitle("Nutrition", action = "Open", onAction = onOpenNutrition)
+        AppCard(onClick = onOpenNutrition) {
+            val t = ui.targets
+            if (t == null) {
+                Text("Complete your profile to see your targets.", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CalorieRing(ui.eaten.kcal.toDouble(), t.kcal.toDouble(), size = 124.dp)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MacroBar("Protein", ui.eaten.proteinG.toDouble(), t.proteinG.toDouble())
+                        MacroBar("Carbs", ui.eaten.carbsG.toDouble(), t.carbsG.toDouble())
+                        MacroBar("Fat", ui.eaten.fatG.toDouble(), t.fatG.toDouble())
                     }
-                    Text(ui.targetNote, style = MaterialTheme.typography.labelSmall)
                 }
+                Text(
+                    "${Units.thousands(ui.eaten.kcal)} of ${Units.thousands(t.kcal)} kcal eaten" + if (ui.targetNote.isNotBlank()) " · ${ui.targetNote}" else "",
+                    Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Hydration  ${ui.waterMl} / ${ui.waterGoalMl} ml", style = MaterialTheme.typography.titleMedium)
-                LinearProgressIndicator(
-                    progress = { (ui.waterMl.toFloat() / ui.waterGoalMl).coerceIn(0f, 1f) },
-                    Modifier.fillMaxWidth()
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(onClick = { vm.addWater(250) }) { Text("+250 ml") }
-                    FilledTonalButton(onClick = { vm.addWater(500) }) { Text("+500 ml") }
-                    TextButton(onClick = vm::undoWater) { Text("Undo") }
+        SectionTitle("Water")
+        AppCard {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                IconBadge(Icons.Filled.WaterDrop, container = MaterialTheme.colorScheme.secondaryContainer, content = MaterialTheme.colorScheme.onSecondaryContainer)
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(Units.thousands(ui.waterMl), style = MaterialTheme.typography.headlineSmall)
+                        Text(" / ${Units.thousands(ui.waterGoalMl)} ml", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
+                    }
+                    val glasses = ((ui.waterGoalMl - ui.waterMl).coerceAtLeast(0) + 249) / 250
+                    Text(
+                        if (glasses == 0) "Goal reached. Nice." else "$glasses more ${if (glasses == 1) "glass" else "glasses"} to go",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = vm::undoWater, enabled = ui.waterMl > 0) { Icon(Icons.AutoMirrored.Filled.Undo, "Undo last water") }
+            }
+            LinearProgressIndicator(
+                progress = { (ui.waterMl.toFloat() / ui.waterGoalMl).coerceIn(0f, 1f) },
+                Modifier.fillMaxWidth().padding(vertical = 16.dp).height(8.dp),
+                color = MaterialTheme.colorScheme.secondary, trackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                strokeCap = StrokeCap.Round, gapSize = 0.dp, drawStopIndicator = {}
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { vm.addWater(250) }, Modifier.weight(1f)) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Glass · 250 ml") }
+                FilledTonalButton(onClick = { vm.addWater(500) }, Modifier.weight(1f)) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Bottle · 500 ml") }
+            }
+        }
+    }
+}
+
+private fun greeting(): String = when (java.time.LocalTime.now().hour) {
+    in 4..11 -> "Good morning"
+    in 12..16 -> "Good afternoon"
+    else -> "Good evening"
+}
+
+@Composable
+private fun StatPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, tint: androidx.compose.ui.graphics.Color) {
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = tint.copy(alpha = 0.12f)) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(16.dp), tint = tint)
+            Spacer(Modifier.width(6.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+private fun WorkoutCard(ui: TodayUi, vm: TodayViewModel, onOpenSession: (Long) -> Unit) {
+    val day = ui.day
+    when {
+        ui.loading -> AppCard { Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+        day == null || day.type == DayType.REST -> AppCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                IconBadge(Icons.Filled.SelfImprovement, container = MaterialTheme.colorScheme.secondaryContainer, content = MaterialTheme.colorScheme.onSecondaryContainer)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(if (ui.rotation) "No training days yet" else "Rest day", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        if (ui.rotation) "Add exercises to a day in the Workout tab."
+                        else "Recovery is where muscle is built. Walk, stretch and drink water. Want to train anyway? Pick any day in the Workout tab.",
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        else -> Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                val overline = when {
+                    ui.activeSessionId != null -> "In progress"
+                    ui.rotation && ui.trainedToday -> "Done today · next up"
+                    ui.rotation -> "Next in your rotation"
+                    else -> "Today's workout"
+                }
+                Text(overline.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                Text(day.title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)) {
+                    Meta(Icons.Filled.FitnessCenter, "${ui.exerciseCount} exercises")
+                    if (day.estimatedMinutes > 0) Meta(Icons.Filled.Schedule, "About ${day.estimatedMinutes} min")
+                }
+                Button(onClick = { vm.start(day.id, onOpenSession) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (ui.activeSessionId != null) "Resume workout" else "Start workout")
                 }
             }
         }
@@ -194,33 +277,10 @@ fun TodayScreen(
 }
 
 @Composable
-private fun WorkoutCard(ui: TodayUi, vm: TodayViewModel, onOpenSession: (Long) -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val day = ui.day
-            when {
-                ui.loading -> CircularProgressIndicator()
-                day == null || day.type == DayType.REST -> {
-                    Text(if (ui.rotation) "No training days in your plan" else "Rest day", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        if (ui.rotation) "Add exercises to a day in the Workout tab." else
-                            "Recovery is where the muscle is built. Walk, stretch, hydrate. Want to train anyway? Pick any day in the Workout tab."
-                    )
-                }
-                else -> {
-                    if (ui.rotation) Text(if (ui.trainedToday) "Done today. Next up:" else "Next in your rotation", style = MaterialTheme.typography.labelLarge)
-                    Text(day.title, style = MaterialTheme.typography.titleLarge)
-                    Text("${ui.exerciseCount} exercises" + if (day.estimatedMinutes > 0) " - about ${day.estimatedMinutes} min" else "")
-                    Button(
-                        onClick = { vm.start(day.id, onOpenSession) },
-                        modifier = Modifier.fillMaxWidth().height(52.dp)
-                    ) {
-                        Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (ui.activeSessionId != null) "Resume workout" else "Start workout")
-                    }
-                }
-            }
-        }
+private fun Meta(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
     }
 }

@@ -34,4 +34,16 @@ class MigrationTest {
         db.query("SELECT weightKg FROM workout_set").use { c -> assertTrue(c.moveToFirst()); assertEquals(60.0, c.getDouble(0), 0.0) }
         db.close()
     }
+
+    @Test fun v2ToV3AddsPhotoTableAndKeepsData() {
+        helper.createDatabase(name, 2).apply {
+            execSQL("INSERT INTO body_weight_entry (id, date, weightKg, source) VALUES (1, '2026-10-01', 80.0, 'MANUAL')")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(name, 3, true)
+        db.query("SELECT weightKg FROM body_weight_entry").use { c -> assertTrue(c.moveToFirst()); assertEquals(80.0, c.getDouble(0), 0.0) }
+        db.execSQL("INSERT INTO progress_photo (takenOn, pose, fileName, width, height, weightKg, note, createdAt) VALUES ('2026-10-01', 'FRONT', 'x', 1200, 1600, 80.0, '', 1)")
+        db.query("SELECT pose FROM progress_photo").use { c -> assertTrue(c.moveToFirst()); assertEquals("FRONT", c.getString(0)) }
+        db.close()
+    }
 }

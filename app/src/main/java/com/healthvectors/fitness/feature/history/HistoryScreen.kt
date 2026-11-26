@@ -15,7 +15,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.EmptyState
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.ui.draw.clip
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.local.dao.SessionRow
 import com.healthvectors.fitness.data.local.dao.SetWithName
@@ -66,45 +69,56 @@ fun HistoryScreen(onBack: () -> Unit, vm: HistoryViewModel = hiltViewModel()) {
     }) { pad ->
         if (sessions.isEmpty()) {
             EmptyState(Icons.Filled.History, "No workouts yet", "Finished workouts show up here. Tap one to see or fix its sets.", Modifier.padding(pad))
-        } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(sessions, key = { it.id }) { s ->
                 val date = Instant.ofEpochMilli(s.startedAt).atZone(zone).toLocalDate()
                 val minutes = s.endedAt?.let { ((it - s.startedAt) / 60000).toInt() }
-                ElevatedCard(onClick = { vm.toggle(s.id) }) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(date.format(dateFmt) + " - " + date.dayOfWeek.name.lowercase().replaceFirstChar(Char::uppercase), style = MaterialTheme.typography.labelLarge)
-                                Text(s.dayTitle ?: "Workout", style = MaterialTheme.typography.titleMedium)
-                            }
-                            Icon(if (expanded == s.id) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, if (expanded == s.id) "Hide sets" else "Show sets")
+                val open = expanded == s.id
+                AppCard(onClick = { vm.toggle(s.id) }, padding = 16.dp) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(
+                            Modifier.size(52.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.primaryContainer),
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("${date.dayOfMonth}", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(date.month.name.take(3).lowercase().replaceFirstChar(Char::uppercase), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
-                        Text(
-                            listOfNotNull(
-                                minutes?.let { "$it min" }, "${s.setCount} sets",
-                                if (s.volumeKg > 0) "${Units.fmt(Units.weightToDisplay(s.volumeKg, unit))} ${Units.weightLabel(unit)} volume" else null,
-                                if (s.prCount > 0) "${s.prCount} PR" else null
-                            ).joinToString(" - "),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        if (expanded == s.id) {
-                            HorizontalDivider(Modifier.padding(vertical = 6.dp))
-                            sets.groupBy { it.exerciseName }.forEach { (name, list) ->
-                                Text(name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-                                list.sortedBy { it.set.setIndex }.forEach { w ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        val v = if (w.repUnit == "reps") "${Units.fmt(Units.weightToDisplay(w.set.weightKg, unit))} ${Units.weightLabel(unit)} x ${w.set.reps}"
-                                        else "${w.set.reps} ${w.repUnit}"
-                                        Text(
-                                            "Set ${w.set.setIndex + 1}: $v" + (w.set.rpe?.let { " @ RPE ${Units.fmt(it)}" } ?: "") +
-                                                (if (w.set.isWarmup) " (warm-up)" else "") + if (w.set.isPr) "  PR" else "",
-                                            Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium
-                                        )
-                                        IconButton(onClick = { vm.deleteSet(w.set.id) }) { Icon(Icons.Filled.Close, "Delete set ${w.set.setIndex + 1} of $name") }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(s.dayTitle ?: "Workout", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                listOfNotNull(
+                                    date.dayOfWeek.name.take(3).lowercase().replaceFirstChar(Char::uppercase),
+                                    minutes?.let { "$it min" }, "${s.setCount} sets",
+                                    if (s.volumeKg > 0) "${Units.compact(Units.weightToDisplay(s.volumeKg, unit))} ${Units.weightLabel(unit)}" else null
+                                ).joinToString(" · "),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (s.prCount > 0) Pill("${s.prCount} PR", container = MaterialTheme.colorScheme.tertiary, content = MaterialTheme.colorScheme.onTertiary)
+                        Icon(if (open) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, if (open) "Hide sets" else "Show sets", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (open) {
+                        sets.groupBy { it.exerciseName }.forEach { (name, list) ->
+                            Text(name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
+                            list.sortedBy { it.set.setIndex }.forEach { w ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("${w.set.setIndex + 1}", Modifier.width(28.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val v = if (w.repUnit == "reps") "${Units.fmt(Units.weightToDisplay(w.set.weightKg, unit))} ${Units.weightLabel(unit)} × ${w.set.reps}"
+                                    else "${w.set.reps} ${w.repUnit}"
+                                    Text(v, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        listOfNotNull(w.set.rpe?.let { "RPE ${Units.fmt(it)}" }, if (w.set.isWarmup) "warm-up" else null).joinToString(" · ").let { if (it.isEmpty()) "" else "  ·  $it" },
+                                        Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    if (w.set.isPr) Pill("PR", container = MaterialTheme.colorScheme.tertiary, content = MaterialTheme.colorScheme.onTertiary)
+                                    IconButton(onClick = { vm.deleteSet(w.set.id) }, Modifier.size(36.dp)) {
+                                        Icon(Icons.Filled.Close, "Delete set ${w.set.setIndex + 1} of $name", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
-                            TextButton(onClick = { confirm = s }) { Icon(Icons.Filled.Delete, null); Spacer(Modifier.width(6.dp)); Text("Delete this workout") }
+                        }
+                        TextButton(onClick = { confirm = s }, Modifier.padding(top = 8.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                            Icon(Icons.Outlined.Delete, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Delete this workout")
                         }
                     }
                 }

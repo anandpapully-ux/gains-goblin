@@ -19,11 +19,12 @@ class Converters {
         UserProfileEntity::class, BodyWeightEntity::class, BodyMeasurementEntity::class,
         ExerciseEntity::class, ExerciseMuscleEntity::class, RoutineEntity::class,
         RoutineDayEntity::class, RoutineExerciseEntity::class, WorkoutSessionEntity::class,
-        WorkoutSetEntity::class, FoodEntity::class, MealEntryEntity::class, WaterEntryEntity::class
+        WorkoutSetEntity::class, FoodEntity::class, MealEntryEntity::class, WaterEntryEntity::class,
+        ProgressPhotoEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2)]
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)]
 )
 @TypeConverters(Converters::class)
 abstract class FitnessDatabase : RoomDatabase() {
@@ -32,4 +33,5 @@ abstract class FitnessDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
     abstract fun nutritionDao(): NutritionDao
     abstract fun backupDao(): BackupDao
+    abstract fun photoDao(): PhotoDao
 }

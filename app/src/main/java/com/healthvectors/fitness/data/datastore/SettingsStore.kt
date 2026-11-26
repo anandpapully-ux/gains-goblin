@@ -16,7 +16,7 @@ private val Context.dataStore by preferencesDataStore("settings")
 data class AppSettings(
     val onboardingDone: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val gymMode: Boolean = false,
     val restSound: Boolean = true,
     val reminderEnabled: Boolean = false,
@@ -51,7 +51,7 @@ class SettingsStore @Inject constructor(@ApplicationContext private val context:
         AppSettings(
             onboardingDone = p[K.onboarding] ?: false,
             themeMode = p[K.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM,
-            dynamicColor = p[K.dynamic] ?: true,
+            dynamicColor = p[K.dynamic] ?: false,
             gymMode = p[K.gym] ?: false,
             restSound = p[K.sound] ?: true,
             reminderEnabled = p[K.reminder] ?: false,

@@ -51,4 +51,19 @@ object Units {
         else String.format(Locale.US, "%.1f", value)
 
     fun fmtWeight(kg: Double, unit: UnitSystem) = fmt(weightToDisplay(kg, unit)) + " " + weightLabel(unit)
+
+    /** Whole number with thousands separators (12345 -> "12,345"). */
+    fun thousands(value: Int): String = String.format(Locale.US, "%,d", value)
+
+    /** Large amounts shortened for tiles (950 -> "950", 12400 -> "12.4k"). */
+    fun compact(value: Double): String =
+        if (kotlin.math.abs(value) < 10_000) thousands(Math.round(value).toInt()) else fmt(value / 1000) + "k"
+
+    /** "Rest 2–3 min", "Rest 60–90 s", or "No rest timer". */
+    fun restRange(min: Int, max: Int): String = when {
+        max <= 0 -> "No rest timer"
+        min % 60 == 0 && max % 60 == 0 && min >= 60 -> if (min == max) "Rest ${min / 60} min" else "Rest ${min / 60}–${max / 60} min"
+        min == max -> "Rest $max s"
+        else -> "Rest $min–$max s"
+    }
 }

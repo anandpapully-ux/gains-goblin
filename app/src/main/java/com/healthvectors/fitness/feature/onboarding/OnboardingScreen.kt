@@ -15,8 +15,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.ChoiceRow
-import com.healthvectors.fitness.core.designsystem.NumField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.outlined.SettingsBackupRestore
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.datastore.SettingsStore
 import com.healthvectors.fitness.data.local.entity.UserProfileEntity
@@ -116,47 +118,67 @@ fun OnboardingScreen(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel
 
     Column(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()
-            .verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
-        Text("Welcome", style = MaterialTheme.typography.headlineLarge)
-        Text(
-            "A few details let us set your calorie and protein targets. Everything stays on this device, " +
-                "encrypted, and no account is needed.",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        OutlinedButton(onClick = { restore.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }, enabled = !busy) {
-            Text("Moving phones? Restore a backup")
+        Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconBadge(Icons.Filled.FitnessCenter, size = 64.dp, container = MaterialTheme.colorScheme.primary, content = MaterialTheme.colorScheme.onPrimary)
+            Text("Welcome", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 12.dp))
+            Text(
+                "A few details let us set your calorie and protein targets. Everything stays on this device, " +
+                    "encrypted, and no account is needed.",
+                style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = { restore.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }, enabled = !busy,
+                contentPadding = PaddingValues(horizontal = 0.dp)
+            ) { Icon(Icons.Outlined.SettingsBackupRestore, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Moving phones? Restore a backup") }
+            message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
-        message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Text("Units", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(UnitSystem.entries, unit, { if (it == UnitSystem.METRIC) "kg / cm" else "lb / in" }) { unit = it }
-        Text("Sex (used for the calorie formula)", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(Sex.entries, sex, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { sex = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NumField(age, { age = it }, "Age", Modifier.weight(1f), decimal = false)
-            NumField(height, { height = it }, "Height", Modifier.weight(1f), suffix = if (unit == UnitSystem.METRIC) "cm" else "in")
-            NumField(weight, { weight = it }, "Weight", Modifier.weight(1f), suffix = Units.weightLabel(unit))
-        }
-        Text("Goal", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(Goal.entries, goal, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { goal = it }
-        Text("Training experience", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(Experience.entries, exp, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { exp = it }
-        Text("Daily activity outside workouts", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(ActivityLevel.entries, activity, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { activity = it }
 
-        Text("Pick a starting plan", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        SectionTitle("About you")
+        GroupCard {
+            GroupField("Units") { ChoiceRow(UnitSystem.entries, unit, { if (it == UnitSystem.METRIC) "kg / cm" else "lb / in" }) { unit = it } }
+            GroupDivider()
+            GroupField("Sex", "Used for the calorie formula") { ChoiceRow(Sex.entries, sex, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { sex = it } }
+            GroupDivider()
+            Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NumField(age, { age = it }, "Age", Modifier.weight(1f), decimal = false)
+                NumField(height, { height = it }, "Height", Modifier.weight(1f), suffix = if (unit == UnitSystem.METRIC) "cm" else "in")
+                NumField(weight, { weight = it }, "Weight", Modifier.weight(1f), suffix = Units.weightLabel(unit))
+            }
+        }
+
+        SectionTitle("Your goal")
+        GroupCard {
+            GroupField("Goal") { ChoiceRow(Goal.entries, goal, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { goal = it } }
+            GroupDivider()
+            GroupField("Training experience") { ChoiceRow(Experience.entries, exp, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { exp = it } }
+            GroupDivider()
+            GroupField("Daily activity outside workouts") { ChoiceRow(ActivityLevel.entries, activity, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { activity = it } }
+        }
+
+        SectionTitle("Pick a starting plan")
         Text(
-            "You can rename days, move them to other weekdays, swap exercises and change sets, reps and rest later. " +
+            "You can rename days, move them, swap exercises and change sets, reps and rest later. " +
                 "You can also import a plan a friend shared from the Workout tab.",
-            style = MaterialTheme.typography.bodySmall
+            Modifier.padding(horizontal = 4.dp, vertical = 4.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         if (templates.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
-        templates.forEach { t -> TemplateCard(t, selected = t.id == templateId) { templateId = t.id } }
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            templates.forEach { t -> TemplateCard(t, selected = t.id == templateId) { templateId = t.id } }
+        }
 
         Button(
             onClick = { vm.finish(unit, sex, ageN!!, hN!!, wN!!, goal, exp, activity, templates.firstOrNull { it.id == templateId }, onDone) },
-            enabled = valid && !busy, modifier = Modifier.fillMaxWidth().height(52.dp)
-        ) { Text(if (templateId == null) "Pick a plan to continue" else "Get started") }
+            enabled = valid && !busy, modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(56.dp)
+        ) {
+            Text(
+                when {
+                    ageN == null || hN == null || wN == null -> "Enter your age, height and weight"
+                    templateId == null -> "Pick a plan to continue"
+                    else -> "Get started"
+                }
+            )
+        }
     }
 }

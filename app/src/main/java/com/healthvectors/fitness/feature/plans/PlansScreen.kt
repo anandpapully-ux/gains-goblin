@@ -5,7 +5,18 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Share
+import com.healthvectors.fitness.core.designsystem.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -134,45 +145,45 @@ fun PlansScreen(onBack: () -> Unit, vm: PlansViewModel = hiltViewModel()) {
             ExtendedFloatingActionButton(onClick = { adding = true }, icon = { Icon(Icons.Filled.Add, null) }, text = { Text("New plan") })
         }
     ) { pad ->
-        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Text(
                     "Your workouts, records and history are shared across plans, so switching never loses progress.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Modifier.padding(horizontal = 4.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             items(plans, key = { it.id }) { r ->
                 var menu by remember { mutableStateOf(false) }
-                ElevatedCard(
-                    colors = if (r.isActive) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    else CardDefaults.elevatedCardColors()
+                AppCard(
+                    onClick = if (r.isActive) null else ({ vm.activate(r) }),
+                    color = if (r.isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                    padding = 16.dp
                 ) {
-                    ListItem(
-                        overlineContent = { if (r.isActive) Text("Current plan") },
-                        headlineContent = { Text(r.name) },
-                        supportingContent = { if (r.description.isNotBlank()) Text(r.description, maxLines = 3) },
-                        trailingContent = {
-                            Box {
-                                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "Options for ${r.name}") }
-                                DropdownMenu(menu, { menu = false }) {
-                                    if (!r.isActive) DropdownMenuItem(text = { Text("Use this plan") }, leadingIcon = { Icon(Icons.Filled.CheckCircle, null) },
-                                        onClick = { menu = false; vm.activate(r) })
-                                    DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Filled.Edit, null) },
-                                        onClick = { menu = false; renaming = r })
-                                    DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) },
-                                        onClick = { menu = false; vm.duplicate(r) })
-                                    DropdownMenuItem(text = { Text("Share") }, leadingIcon = { Icon(Icons.Filled.Share, null) },
-                                        onClick = { menu = false; vm.share(r) { ctx.startActivity(it) } })
-                                    DropdownMenuItem(text = { Text("Save to file") }, leadingIcon = { Icon(Icons.Filled.Save, null) },
-                                        onClick = { menu = false; exporting = r; create.launch(PlansViewModel.fileName(r.name)) })
-                                    if (!r.isActive) DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Filled.Delete, null) },
-                                        onClick = { menu = false; deleting = r })
-                                }
+                    Row(verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(1f).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (r.isActive) Pill("Current plan")
+                            Text(r.name, style = MaterialTheme.typography.titleMedium)
+                            if (r.description.isNotBlank()) Text(r.description, maxLines = 3, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (!r.isActive) Text("Tap to use this plan", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+                        }
+                        Box {
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "Options for ${r.name}") }
+                            DropdownMenu(menu, { menu = false }) {
+                                if (!r.isActive) DropdownMenuItem(text = { Text("Use this plan") }, leadingIcon = { Icon(Icons.Filled.CheckCircle, null) },
+                                    onClick = { menu = false; vm.activate(r) })
+                                DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                                    onClick = { menu = false; renaming = r })
+                                DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Outlined.ContentCopy, null) },
+                                    onClick = { menu = false; vm.duplicate(r) })
+                                DropdownMenuItem(text = { Text("Share") }, leadingIcon = { Icon(Icons.Outlined.Share, null) },
+                                    onClick = { menu = false; vm.share(r) { ctx.startActivity(it) } })
+                                DropdownMenuItem(text = { Text("Save to file") }, leadingIcon = { Icon(Icons.Outlined.Save, null) },
+                                    onClick = { menu = false; exporting = r; create.launch(PlansViewModel.fileName(r.name)) })
+                                if (!r.isActive) DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) },
+                                    onClick = { menu = false; deleting = r })
                             }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
-                        modifier = Modifier.clickable(enabled = !r.isActive) { vm.activate(r) }
-                    )
+                        }
+                    }
                 }
             }
         }
@@ -208,19 +219,13 @@ fun PlansScreen(onBack: () -> Unit, vm: PlansViewModel = hiltViewModel()) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewPlanSheet(templates: List<PlanTemplate>, onTemplate: (PlanTemplate) -> Unit, onImport: () -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        LazyColumn(Modifier.padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { Text("New plan", style = MaterialTheme.typography.titleLarge) }
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.statusBarsPadding()) {
+        LazyColumn(Modifier.padding(horizontal = 24.dp), contentPadding = PaddingValues(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item { Text("New plan", style = MaterialTheme.typography.headlineSmall) }
             item {
-                OutlinedCard(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-                    ListItem(
-                        leadingContent = { Icon(Icons.Filled.FileOpen, null) },
-                        headlineContent = { Text("Import a plan file") },
-                        supportingContent = { Text("A .json plan someone shared with you, or one you saved earlier.") }
-                    )
-                }
+                ActionTile(Icons.Outlined.FileOpen, "Import a plan file", "A .json plan someone shared with you, or one you saved earlier.", Modifier.fillMaxWidth(), onImport)
             }
-            item { Text("Starter plans (you can edit everything afterwards)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
+            item { SectionTitle("Starter plans · you can edit everything afterwards") }
             items(templates, key = { it.id }) { t -> TemplateCard(t, selected = false) { onTemplate(t) } }
         }
     }
@@ -228,15 +233,21 @@ private fun NewPlanSheet(templates: List<PlanTemplate>, onTemplate: (PlanTemplat
 
 @Composable
 fun TemplateCard(t: PlanTemplate, selected: Boolean, onClick: () -> Unit) {
-    OutlinedCard(
-        onClick = onClick, modifier = Modifier.fillMaxWidth(),
-        colors = if (selected) CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.outlinedCardColors()
+    val lifting = t.plan.days.count { it.type == DayType.HYPERTROPHY && it.items.isNotEmpty() }
+    val cardio = t.plan.days.count { it.type == DayType.CARDIO && it.items.isNotEmpty() }
+    Surface(
+        onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IconBadge(
+                when { lifting == 0 && cardio == 0 -> Icons.Outlined.EditNote; t.plan.name.contains("Home", true) -> Icons.Outlined.Home; else -> Icons.Outlined.FitnessCenter },
+                container = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                content = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+            )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t.plan.name, style = MaterialTheme.typography.titleMedium)
-                val lifting = t.plan.days.count { it.type == DayType.HYPERTROPHY && it.items.isNotEmpty() }
-                val cardio = t.plan.days.count { it.type == DayType.CARDIO && it.items.isNotEmpty() }
                 Text(
                     when {
                         lifting == 0 && cardio == 0 -> "Empty week"
@@ -245,7 +256,7 @@ fun TemplateCard(t: PlanTemplate, selected: Boolean, onClick: () -> Unit) {
                     },
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary
                 )
-                if (t.plan.description.isNotBlank()) Text(t.plan.description, style = MaterialTheme.typography.bodySmall)
+                if (t.plan.description.isNotBlank()) Text(t.plan.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (selected) Icon(Icons.Filled.CheckCircle, "Selected", tint = MaterialTheme.colorScheme.primary)
         }

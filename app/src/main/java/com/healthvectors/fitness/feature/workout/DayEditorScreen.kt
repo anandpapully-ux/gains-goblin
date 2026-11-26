@@ -21,9 +21,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.healthvectors.fitness.core.designsystem.ChoiceRow
-import com.healthvectors.fitness.core.designsystem.EmptyState
-import com.healthvectors.fitness.core.designsystem.NumField
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.ui.draw.clip
+import com.healthvectors.fitness.core.designsystem.*
 import com.healthvectors.fitness.core.util.Units
 import com.healthvectors.fitness.data.datastore.AppSettings
 import com.healthvectors.fitness.data.datastore.SettingsStore
@@ -111,13 +115,13 @@ fun DayEditorScreen(onBack: () -> Unit, onStart: (Long) -> Unit, vm: DayEditorVi
                         day?.let { d ->
                             Text(
                                 (if (rotation) "Position ${d.dayOfWeek}" else DayOfWeek.of(d.dayOfWeek).name.lowercase().replaceFirstChar(Char::uppercase)) +
-                                    " - " + d.type.label(), style = MaterialTheme.typography.labelMedium
+                                    " · " + d.type.label(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = { IconButton(onClick = { daySettings = true }) { Icon(Icons.Filled.Edit, "Edit day name, type and weekday") } }
+                actions = { IconButton(onClick = { daySettings = true }) { Icon(Icons.Outlined.Edit, "Edit day name, type and weekday") } }
             )
         },
         floatingActionButton = {
@@ -137,34 +141,46 @@ fun DayEditorScreen(onBack: () -> Unit, onStart: (Long) -> Unit, vm: DayEditorVi
         }
     ) { pad ->
         if (items.isEmpty()) {
-            Column(Modifier.padding(pad).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyState(
-                    Icons.Filled.FitnessCenter, "No exercises",
-                    if (day?.type == DayType.REST) "This is a rest day. Add exercises, or tap the pencil to rename it or change its type."
-                    else "Tap Add exercise to build this day."
-                )
-                OutlinedButton(onClick = { daySettings = true }) { Text("Edit day") }
+            EmptyState(
+                Icons.Filled.FitnessCenter, if (day?.type == DayType.REST) "Rest day" else "No exercises yet",
+                if (day?.type == DayType.REST) "Add exercises to train on this day, or edit it to rename it or change its type."
+                else "Tap Add exercise to build this day.",
+                Modifier.padding(pad)
+            ) { OutlinedButton(onClick = { daySettings = true }) { Text("Edit day") } }
+        } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp)) {
+            item {
+                val sets = items.sumOf { it.item.targetSets }
+                SectionTitle("${items.size} exercises · $sets sets", Modifier.padding(top = 0.dp), action = "Edit day", onAction = { daySettings = true })
             }
-        } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(items, key = { it.item.id }) { row ->
-                val idx = items.indexOf(row)
-                ElevatedCard {
-                    Row(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f).clickable { editing = row }) {
+            itemsIndexed(items, key = { _, r -> r.item.id }) { idx, row ->
+                GroupItem(idx, items.size, dividerInset = 68.dp) {
+                    var menu by remember { mutableStateOf(false) }
+                    Row(
+                        Modifier.fillMaxWidth().clickable { editing = row }.padding(start = 16.dp, top = 14.dp, bottom = 14.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                            Text("${idx + 1}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(row.exercise.name, style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "${row.item.targetSets} x ${row.item.repMin}-${row.item.repMax} ${unitWord(row.exercise.repUnit)}" + if (row.item.perSide) " per side" else "",
+                                "${row.item.targetSets} × ${row.item.repMin}–${row.item.repMax} ${unitWord(row.exercise.repUnit)}" + if (row.item.perSide) " per side" else "",
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            val rest = if (row.item.restMaxSec > 0) "Rest ${row.item.restMinSec}-${row.item.restMaxSec}s" else "No rest timer"
-                            val rir = if (row.exercise.repUnit == "reps") " - RIR ${row.item.rirMin}-${row.item.rirMax}" else ""
-                            Text("$rest$rir - tap to edit", style = MaterialTheme.typography.labelSmall)
+                            val rir = if (row.exercise.repUnit == "reps") " · RIR ${row.item.rirMin}–${row.item.rirMax}" else ""
+                            Text(Units.restRange(row.item.restMinSec, row.item.restMaxSec) + rir, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Column {
-                            IconButton(onClick = { vm.move(idx, -1) }, enabled = idx > 0) { Icon(Icons.Filled.KeyboardArrowUp, "Move ${row.exercise.name} up") }
-                            IconButton(onClick = { vm.move(idx, 1) }, enabled = idx < items.lastIndex) { Icon(Icons.Filled.KeyboardArrowDown, "Move ${row.exercise.name} down") }
+                        Box {
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "Options for ${row.exercise.name}") }
+                            DropdownMenu(menu, { menu = false }) {
+                                DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Outlined.Edit, null) }, onClick = { menu = false; editing = row })
+                                if (idx > 0) DropdownMenuItem(text = { Text("Move up") }, leadingIcon = { Icon(Icons.Filled.KeyboardArrowUp, null) }, onClick = { menu = false; vm.move(idx, -1) })
+                                if (idx < items.lastIndex) DropdownMenuItem(text = { Text("Move down") }, leadingIcon = { Icon(Icons.Filled.KeyboardArrowDown, null) }, onClick = { menu = false; vm.move(idx, 1) })
+                                DropdownMenuItem(text = { Text("Replace") }, leadingIcon = { Icon(Icons.Filled.SwapHoriz, null) }, onClick = { menu = false; replacing = row; picking = true })
+                                DropdownMenuItem(text = { Text("Remove") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { menu = false; vm.remove(row.item.id) })
+                            }
                         }
-                        IconButton(onClick = { vm.remove(row.item.id) }) { Icon(Icons.Filled.Delete, "Remove ${row.exercise.name}") }
                     }
                 }
             }
@@ -216,37 +232,30 @@ private fun DaySettingsDialog(
     var type by remember { mutableStateOf(day.type) }
     var minutes by remember { mutableStateOf(day.estimatedMinutes.toString()) }
     var weekday by remember { mutableStateOf(day.dayOfWeek) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit day") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Text("Type", style = MaterialTheme.typography.labelLarge)
-                ChoiceRow(DayType.entries, type, { it.label() }) { type = it }
-                NumField(minutes, { minutes = it }, "Estimated minutes", Modifier.fillMaxWidth(), decimal = false)
-                Text(if (rotation) "Position in rotation" else "Weekday", style = MaterialTheme.typography.labelLarge)
-                Text(
-                    "Moving swaps places with the day that is there now.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+    FormSheet(
+        "Edit day", onDismiss, primaryLabel = "Save", primaryEnabled = title.isNotBlank(),
+        onPrimary = { onSave(title, type, minutes.toIntOrNull() ?: 0, weekday) }
+    ) {
+        OutlinedTextField(title, { title = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Text("Type", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp))
+        ChoiceRow(DayType.entries, type, { it.label() }) { type = it }
+        NumField(minutes, { minutes = it }, "Estimated minutes", Modifier.fillMaxWidth(), decimal = false, suffix = "min")
+        Text(if (rotation) "Position in rotation" else "Weekday", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            (1..7).forEach { wd ->
+                FilterChip(
+                    selected = weekday == wd, onClick = { weekday = wd },
+                    label = { Text(if (rotation) "$wd" else DayOfWeek.of(wd).name.take(3).lowercase().replaceFirstChar(Char::uppercase)) }
                 )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (1..7).forEach { wd ->
-                        FilterChip(
-                            selected = weekday == wd, onClick = { weekday = wd },
-                            label = { Text(if (rotation) "$wd" else DayOfWeek.of(wd).name.take(3).lowercase().replaceFirstChar(Char::uppercase)) }
-                        )
-                    }
-                }
-                weekDays.firstOrNull { it.dayOfWeek == weekday && it.id != day.id }?.let {
-                    Text("\"${it.title}\" will move to ${if (rotation) "position ${day.dayOfWeek}" else DayOfWeek.of(day.dayOfWeek).name.lowercase().replaceFirstChar(Char::uppercase)}.",
-                        style = MaterialTheme.typography.bodySmall)
-                }
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(title, type, minutes.toIntOrNull() ?: 0, weekday) }, enabled = title.isNotBlank()) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+        }
+        val other = weekDays.firstOrNull { it.dayOfWeek == weekday && it.id != day.id }
+        Text(
+            if (other != null) "\"${other.title}\" will move to ${if (rotation) "position ${day.dayOfWeek}" else DayOfWeek.of(day.dayOfWeek).name.lowercase().replaceFirstChar(Char::uppercase)}."
+            else "Moving a day swaps places with the day that is there now.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
@@ -270,60 +279,60 @@ private fun ItemEditor(
     val label = Units.weightLabel(unit)
     val defaultStep = Units.fmt(Units.weightToDisplay(Units.stepKg(unit, e.equipment), unit))
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(e.name) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (e.equipment.isNotBlank()) Text(e.equipment, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                NumField(sets, { sets = it }, "Sets", Modifier.fillMaxWidth(), decimal = false)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    NumField(min, { min = it }, "Min ${unitWord(e.repUnit)}", Modifier.weight(1f), decimal = false)
-                    NumField(max, { max = it }, "Max ${unitWord(e.repUnit)}", Modifier.weight(1f), decimal = false)
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    NumField(restMin, { restMin = it }, "Rest min", Modifier.weight(1f), decimal = false, suffix = "s")
-                    NumField(restMax, { restMax = it }, "Rest max", Modifier.weight(1f), decimal = false, suffix = "s")
-                }
-                Text("The rest timer runs for the max rest; 0 turns it off.", style = MaterialTheme.typography.bodySmall)
-                if (reps) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumField(rirMin, { rirMin = it }, "RIR min", Modifier.weight(1f), decimal = false)
-                        NumField(rirMax, { rirMax = it }, "RIR max", Modifier.weight(1f), decimal = false)
-                    }
-                    NumField(step, { step = it }, "Weight jump (default $defaultStep)", Modifier.fillMaxWidth(), suffix = label)
-                    Text("How much to add when you hit the top of the range. Leave empty for the default.", style = MaterialTheme.typography.bodySmall)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Counted per side", Modifier.weight(1f))
-                    Switch(perSide, { perSide = it })
-                }
-                OutlinedTextField(notes, { notes = it }, label = { Text("Notes / cues") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                if (e.alternatives.isNotBlank()) Text("Alternatives: " + e.alternatives.replace("|", ", "), style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick = onReplace, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.SwapHoriz, null); Spacer(Modifier.width(6.dp)); Text("Replace exercise")
-                }
+    fun save() {
+        val lo = min.toIntOrNull() ?: i.repMin
+        val rLo = restMin.toIntOrNull() ?: i.restMinSec
+        val rirLo = (rirMin.toIntOrNull() ?: i.rirMin).coerceIn(0, 10)
+        onSave(
+            i.copy(
+                targetSets = (sets.toIntOrNull() ?: i.targetSets).coerceIn(1, 20),
+                repMin = lo, repMax = maxOf(lo, max.toIntOrNull() ?: i.repMax),
+                restMinSec = rLo, restMaxSec = maxOf(rLo, restMax.toIntOrNull() ?: i.restMaxSec),
+                rirMin = rirLo, rirMax = maxOf(rirLo, (rirMax.toIntOrNull() ?: i.rirMax).coerceIn(0, 10)),
+                perSide = perSide, notes = notes.trim()
+            ),
+            step.toDoubleOrNull()?.takeIf { it > 0 }?.let { Units.weightFromDisplay(it, unit) }
+        )
+    }
+
+    FormSheet(e.name, onDismiss, primaryLabel = "Save", onPrimary = ::save, subtitle = listOf(e.primaryMuscle, e.equipment).filter { it.isNotBlank() }.joinToString(" · ")) {
+        SheetLabel("Sets and ${unitWord(e.repUnit)}")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumField(sets, { sets = it }, "Sets", Modifier.weight(1f), decimal = false)
+            NumField(min, { min = it }, "From", Modifier.weight(1f), decimal = false)
+            NumField(max, { max = it }, "To", Modifier.weight(1f), decimal = false)
+        }
+        SheetLabel("Rest between sets", "The timer runs for the longer time; 0 turns it off.")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumField(restMin, { restMin = it }, "From", Modifier.weight(1f), decimal = false, suffix = "s")
+            NumField(restMax, { restMax = it }, "To", Modifier.weight(1f), decimal = false, suffix = "s")
+        }
+        if (reps) {
+            SheetLabel("Effort", "Reps in reserve: how many more you could have done.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NumField(rirMin, { rirMin = it }, "RIR from", Modifier.weight(1f), decimal = false)
+                NumField(rirMax, { rirMax = it }, "RIR to", Modifier.weight(1f), decimal = false)
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val lo = min.toIntOrNull() ?: i.repMin
-                val rLo = restMin.toIntOrNull() ?: i.restMinSec
-                val rirLo = (rirMin.toIntOrNull() ?: i.rirMin).coerceIn(0, 10)
-                onSave(
-                    i.copy(
-                        targetSets = (sets.toIntOrNull() ?: i.targetSets).coerceIn(1, 20),
-                        repMin = lo, repMax = maxOf(lo, max.toIntOrNull() ?: i.repMax),
-                        restMinSec = rLo, restMaxSec = maxOf(rLo, restMax.toIntOrNull() ?: i.restMaxSec),
-                        rirMin = rirLo, rirMax = maxOf(rirLo, (rirMax.toIntOrNull() ?: i.rirMax).coerceIn(0, 10)),
-                        perSide = perSide, notes = notes.trim()
-                    ),
-                    step.toDoubleOrNull()?.takeIf { it > 0 }?.let { Units.weightFromDisplay(it, unit) }
-                )
-            }) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+            SheetLabel("Weight jump", "Added when you hit the top of the range. Empty uses $defaultStep $label.")
+            NumField(step, { step = it }, "Weight jump", Modifier.fillMaxWidth(), suffix = label)
+        }
+        Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer) {
+            SwitchSetting("Counted per side", perSide, { perSide = it }, subtitle = "For one-arm or one-leg exercises")
+        }
+        OutlinedTextField(notes, { notes = it }, label = { Text("Notes and cues") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        if (e.alternatives.isNotBlank()) Text("Alternatives: " + e.alternatives.replace("|", ", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        OutlinedButton(onClick = onReplace, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Filled.SwapHoriz, null); Spacer(Modifier.width(8.dp)); Text("Replace exercise")
+        }
+    }
+}
+
+@Composable
+private fun SheetLabel(title: String, help: String? = null) {
+    Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = MaterialTheme.typography.labelLarge)
+        if (help != null) Text(help, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 private enum class ExerciseKind(val label: String, val rule: ProgressionRule) {
@@ -345,9 +354,9 @@ private fun ExercisePicker(
     var creating by remember { mutableStateOf(false) }
     // The muscle being replaced comes first so the active filter is visible without scrolling.
     val muscles = remember(library) { library.map { it.primaryMuscle }.distinct().sortedWith(compareBy({ it != preferredMuscle }, { it })) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.statusBarsPadding()) {
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(if (creating) "New exercise" else title, style = MaterialTheme.typography.titleMedium)
+            Text(if (creating) "New exercise" else title, style = MaterialTheme.typography.headlineSmall)
             if (creating) {
                 var name by remember { mutableStateOf("") }
                 var m by remember { mutableStateOf(preferredMuscle ?: "") }
@@ -395,7 +404,8 @@ private fun ExercisePicker(
                     items(filtered, key = { it.id }) { e ->
                         ListItem(
                             headlineContent = { Text(e.name) },
-                            supportingContent = { Text("${e.primaryMuscle} - ${e.equipment.ifBlank { "Any" }}" + if (e.isCustom) " - custom" else "") },
+                            supportingContent = { Text("${e.primaryMuscle} · ${e.equipment.ifBlank { "Any equipment" }}" + if (e.isCustom) " · custom" else "") },
+                            colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
                             modifier = Modifier.clickable { onPick(e) }
                         )
                     }

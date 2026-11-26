@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             val vm: AppViewModel = hiltViewModel()
             val settings by vm.settings.collectAsStateWithLifecycle()
             FitnessTheme(settings?.themeMode ?: com.healthvectors.fitness.domain.model.ThemeMode.SYSTEM,
-                settings?.dynamicColor ?: true) {
+                settings?.dynamicColor ?: false) {
                 settings?.let { AppNavHost(startOnboarding = !it.onboardingDone) }
             }
         }
